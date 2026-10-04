@@ -1,0 +1,41 @@
+# Dependencies & build output
+node_modules
+.next
+out
+coverage
+*.tsbuildinfo
+
+# Git & IDE configs
+.git
+.gitignore
+.gitattributes
+.github
+.vscode
+.idea
+*.swp
+*.swo
+
+# Environment variables & secrets (preserve examples)
+.env
+.env.*
+!.env.example
+
+# Logs & temporary files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+tmp
+temp
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Documentation & workspace metadata
+README.md
+AGENTS.md
+CLAUDE.md
+.agents
+.claude
