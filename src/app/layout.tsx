@@ -38,6 +38,7 @@ export default function RootLayout({
       data-role="simantrix"
       data-theme={LIGHT_THEME_ATTR}
       data-color-mode="light"
+      data-scroll-behavior="smooth"
       style={{ colorScheme: "light" }}
       suppressHydrationWarning
       className={`${dmSans.variable} ${unbounded.variable} font-sans h-full antialiased`}

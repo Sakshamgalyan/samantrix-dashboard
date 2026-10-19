@@ -1,4 +1,4 @@
-﻿/** Contracts of the backend `/versioning` endpoints. */
+/** Contracts of the backend `/versioning` endpoints. */
 
 export const RELEASE_APPS = [
   "BACKEND",
@@ -63,6 +63,9 @@ export interface Release {
   summary: string | null;
   changes: ReleaseChange[];
   downloadUrl: string | null;
+  windowsUrl: string | null;
+  macUrl: string | null;
+  linuxUrl: string | null;
   releasedAt: string | null;
   createdAt: string;
   updatedAt: string;

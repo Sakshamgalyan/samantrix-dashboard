@@ -6,7 +6,7 @@ import { Spinner, Typography } from "@galyan/ui";
 import { useAuth } from "@/features/auth";
 import { isPlatformAdmin } from "@/utils/roles";
 
-export default function RootPage() {
+const RootPage = () => {
   const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
 
@@ -34,9 +34,13 @@ export default function RootPage() {
           variant="span"
           className="text-xs uppercase tracking-widest text-[var(--gy-text-subtle)]"
         >
-          {isLoading ? "Connecting to Control Center" : "Redirecting to your workspace"}
+          {isLoading
+            ? "Connecting to Control Center"
+            : "Redirecting to your workspace"}
         </Typography>
       </div>
     </div>
   );
-}
+};
+
+export default RootPage;

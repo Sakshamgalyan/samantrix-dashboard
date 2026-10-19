@@ -27,10 +27,7 @@ import { broadcastAuthLogout } from "@/utils/broadcast-auth-logout";
 import { setSignedInHint } from "@/utils/signed-in-hint";
 import { useAuthBroadcast } from "@/hooks/use-auth-broadcast";
 import { dashboardApi, useAppDispatch } from "@/store";
-import {
-  Organization,
-  OrgRole,
-} from "@/types/dashboard";
+import { Organization, OrgRole } from "@/types/dashboard";
 
 export interface BackendErrorInfo {
   message: string;
@@ -120,18 +117,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [backendError, setBackendError] = useState<BackendErrorInfo | null>(() => {
+  const [backendError, setBackendError] = useState<BackendErrorInfo | null>(
+    null,
+  );
+  const isBackendDown = Boolean(backendError);
+
+  // Sync cached offline state on client mount only to prevent hydration mismatch between server and client
+  useEffect(() => {
     const cached = getCachedBackendOfflineState();
     if (cached) {
-      return {
+      setBackendError({
         message: cached.message,
         statusCode: cached.statusCode,
         timestamp: cached.timestamp,
-      };
+      });
     }
-    return null;
-  });
-  const isBackendDown = Boolean(backendError);
+  }, []);
 
   // The cookies are httpOnly; the BFF clears them on logout or once a refresh is refused
   const clearLocalSession = useCallback(() => {
@@ -139,7 +140,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
     setOrganization(null);
     storeDispatch(dashboardApi.util.resetApiState());
-    router.push("/");
+    if (typeof window !== "undefined") {
+      const pathname = window.location.pathname;
+      if (!pathname.startsWith("/auth")) {
+        router.replace("/auth");
+      }
+    }
   }, [router, storeDispatch]);
 
   // Synchronize logout across all open browser tabs
@@ -153,9 +159,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Listen to global backend unavailable / reconnected events dispatched by the API client
   useEffect(() => {
     const handleUnavailable = (event: Event) => {
-      const custom = event as CustomEvent<{ message?: string; status?: number }>;
+      const custom = event as CustomEvent<{
+        message?: string;
+        status?: number;
+      }>;
       const errInfo = {
-        message: custom.detail?.message || "Unable to connect to internal services.",
+        message:
+          custom.detail?.message || "Unable to connect to internal services.",
         statusCode: custom.detail?.status || 503,
         timestamp: Date.now(),
       };
@@ -179,6 +189,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // The api client could not renew the session: drop the user (AuthGate then goes to sign-in)
   useEffect(() => {
     const handleUnauthorized = () => {
+      if (
+        typeof window !== "undefined" &&
+        window.location.pathname.startsWith("/auth")
+      ) {
+        setIsAuthenticated(false);
+        setUser(null);
+        setOrganization(null);
+        return;
+      }
       broadcastAuthLogout();
       clearLocalSession();
     };
@@ -194,96 +213,100 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const userId = user?.id ?? null;
   useEffect(() => {
     if (cachedForUserRef.current !== userId) {
-      if (cachedForUserRef.current !== null) storeDispatch(dashboardApi.util.resetApiState());
+      if (cachedForUserRef.current !== null)
+        storeDispatch(dashboardApi.util.resetApiState());
       cachedForUserRef.current = userId;
     }
   }, [userId, storeDispatch]);
 
   // Concurrent callers (mount effect, login, portal choice) share one profile request
-  const sessionInFlightRef = useRef<Promise<CurrentUserSession | null> | null>(null);
+  const sessionInFlightRef = useRef<Promise<CurrentUserSession | null> | null>(
+    null,
+  );
 
-  const loadSession = useCallback(async (): Promise<CurrentUserSession | null> => {
-    try {
-      // The session is in httpOnly cookies: ask the backend who we are. On a 401 the api
-      // client renews the session once and retries; if that fails too we are anonymous.
-      const profile = await api.get("/auth/profile");
-      if (profile && profile.id) {
-        const userObj: CurrentUserSession = {
-          id: profile.id,
-          name: profile.fullName || profile.name || "User",
-          fullName: profile.fullName || profile.name || "User",
-          email: profile.email,
-          avatarUrl: profile.avatarUrl || profile.avatar,
-          avatar: profile.avatarUrl || profile.avatar,
-          role: profile.role || "MEMBER",
-          platformRole: profile.platformRole,
-          userType: profile.userType,
-          twoFactorEnabled: profile.twoFactorEnabled ?? false,
-          isEmailVerified: profile.isEmailVerified ?? false,
-          permissions: profile.permissions || ["*"],
-          organization: profile.organization || null,
-          session: profile.session || null,
-        };
+  const loadSession =
+    useCallback(async (): Promise<CurrentUserSession | null> => {
+      try {
+        // The session is in httpOnly cookies: ask the backend who we are. On a 401 the api
+        // client renews the session once and retries; if that fails too we are anonymous.
+        const profile = await api.get("/auth/profile");
+        if (profile && profile.id) {
+          const userObj: CurrentUserSession = {
+            id: profile.id,
+            name: profile.fullName || profile.name || "User",
+            fullName: profile.fullName || profile.name || "User",
+            email: profile.email,
+            avatarUrl: profile.avatarUrl || profile.avatar,
+            avatar: profile.avatarUrl || profile.avatar,
+            role: profile.role || "MEMBER",
+            platformRole: profile.platformRole,
+            userType: profile.userType,
+            twoFactorEnabled: profile.twoFactorEnabled ?? false,
+            isEmailVerified: profile.isEmailVerified ?? false,
+            permissions: profile.permissions || ["*"],
+            organization: profile.organization || null,
+            session: profile.session || null,
+          };
 
-        setUser(userObj);
-        setIsAuthenticated(true);
-        clearCachedBackendOfflineState();
-        setBackendError(null);
+          setUser(userObj);
+          setIsAuthenticated(true);
+          clearCachedBackendOfflineState();
+          setBackendError(null);
 
-        // Fetch organization details if available
-        if (profile.organization?.id) {
-          try {
-            const orgData = await api.get("/organizations/current");
-            if (orgData && orgData.id) {
-              setOrganization(orgData);
+          // Fetch organization details if available
+          if (profile.organization?.id) {
+            try {
+              const orgData = await api.get("/organizations/current");
+              if (orgData && orgData.id) {
+                setOrganization(orgData);
+              }
+            } catch {
+              // Organization endpoint might fail if token lacks orgId
             }
-          } catch {
-            // Organization endpoint might fail if token lacks orgId
           }
+          return userObj;
         }
-        return userObj;
-      }
-      clearCachedBackendOfflineState();
-      setBackendError(null);
-      setIsAuthenticated(false);
-      setUser(null);
-      setOrganization(null);
-      return null;
-    } catch (err) {
-      if (err instanceof ApiError && err.statusCode === 401) {
         clearCachedBackendOfflineState();
         setBackendError(null);
         setIsAuthenticated(false);
         setUser(null);
         setOrganization(null);
         return null;
-      }
+      } catch (err) {
+        if (err instanceof ApiError && err.statusCode === 401) {
+          clearCachedBackendOfflineState();
+          setBackendError(null);
+          setIsAuthenticated(false);
+          setUser(null);
+          setOrganization(null);
+          return null;
+        }
 
-      if (isBackendDownError(err)) {
-        console.warn("[Simantrix Auth] Backend service unreachable:", err);
-        const errInfo = {
-          message:
-            err instanceof Error
-              ? err.message
-              : "Unable to connect to internal services.",
-          statusCode: err instanceof ApiError ? err.statusCode : 503,
-          timestamp: Date.now(),
-        };
-        setCachedBackendOfflineState(errInfo);
-        setBackendError(errInfo);
+        if (isBackendDownError(err)) {
+          console.warn("[Simantrix Auth] Backend service unreachable:", err);
+          const errInfo = {
+            message:
+              err instanceof Error
+                ? err.message
+                : "Unable to connect to internal services.",
+            statusCode: err instanceof ApiError ? err.statusCode : 503,
+            timestamp: Date.now(),
+          };
+          setCachedBackendOfflineState(errInfo);
+          setBackendError(errInfo);
+          setIsAuthenticated(false);
+          return null;
+        }
+
+        console.warn("Could not restore session from backend:", err);
         setIsAuthenticated(false);
+        setUser(null);
+        setOrganization(null);
         return null;
+      } finally {
+        setIsLoading(false);
       }
-
-      console.warn("Could not restore session from backend:", err);
-      setIsAuthenticated(false);
-      setUser(null);
-      setOrganization(null);
-      return null;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+    }, []);
 
   const fetchSession = useCallback((): Promise<CurrentUserSession | null> => {
     if (!sessionInFlightRef.current) {
@@ -325,7 +348,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     // The website handoff page signs in with a fresh code and then calls refreshSession() itself.
     // Restoring an older session here would race it (its socket would get `session:revoked` once
     // the exchange moves the session, which clears the new tokens and redirects to `/`).
-    if (window.location.pathname === HANDOFF_CALLBACK_PATH) return;
+    if (typeof window !== "undefined") {
+      if (window.location.pathname === HANDOFF_CALLBACK_PATH) return;
+      if (window.location.pathname.startsWith("/auth")) {
+        setIsLoading(false);
+        return;
+      }
+    }
     void Promise.resolve().then(fetchSession);
   }, [fetchSession]);
 
@@ -357,9 +386,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         return { success: true };
       }
 
-      return { success: false, error: "Authentication failed. Invalid response." };
+      return {
+        success: false,
+        error: "Authentication failed. Invalid response.",
+      };
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Failed to sign in. Check email and password.";
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : "Failed to sign in. Check email and password.";
       return { success: false, error: msg };
     }
   };
@@ -381,12 +416,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       return { success: false, error: "Invalid two-factor code" };
     } catch (err) {
-      const msg = err instanceof ApiError ? err.message : "Invalid two-factor code or recovery code";
+      const msg =
+        err instanceof ApiError
+          ? err.message
+          : "Invalid two-factor code or recovery code";
       return { success: false, error: msg };
     }
   };
-
-
 
   const logout = useCallback(async () => {
     // Free this device's slot so the account can sign in elsewhere

@@ -52,6 +52,9 @@ const getInitialValues = (
   summary: release?.summary ?? "",
   changes: release?.changes ?? [],
   downloadUrl: release?.downloadUrl ?? "",
+  windowsUrl: release?.windowsUrl ?? "",
+  macUrl: release?.macUrl ?? "",
+  linuxUrl: release?.linuxUrl ?? "",
 });
 
 const ReleaseForm = ({
@@ -141,14 +144,54 @@ const ReleaseForm = ({
         {...register("title")}
       />
 
-      <Input
-        label="Desktop Installer / Download Link"
-        placeholder="https://releases.simantrix.com/desktop/simantrix-setup.exe"
-        fullWidth
-        hasError={Boolean(errors.downloadUrl)}
-        error={errors.downloadUrl?.message}
-        {...register("downloadUrl")}
-      />
+      <div className="space-y-2 rounded-xl border border-[var(--gy-border)] bg-[var(--gy-surface-subtle)] p-3">
+        <div className="flex items-center justify-between">
+          <label className="text-xs font-semibold text-[var(--gy-text)] uppercase tracking-wider">
+            Platform Binary Download Links
+          </label>
+          <span className="text-[0.7rem] text-[var(--gy-text-secondary)]">
+            Handled live on simantrix-home/download
+          </span>
+        </div>
+
+        <Input
+          label="Windows Installer (.exe / .msi)"
+          placeholder="https://releases.simantrix.com/desktop/Simantrix-Setup-x64.exe"
+          fullWidth
+          hasError={Boolean(errors.windowsUrl)}
+          error={errors.windowsUrl?.message}
+          {...register("windowsUrl")}
+        />
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Input
+            label="macOS Package (.dmg / .zip)"
+            placeholder="https://releases.simantrix.com/desktop/Simantrix-mac-arm64.dmg"
+            fullWidth
+            hasError={Boolean(errors.macUrl)}
+            error={errors.macUrl?.message}
+            {...register("macUrl")}
+          />
+
+          <Input
+            label="Linux Package (.AppImage / .deb)"
+            placeholder="https://releases.simantrix.com/desktop/Simantrix-x86_64.AppImage"
+            fullWidth
+            hasError={Boolean(errors.linuxUrl)}
+            error={errors.linuxUrl?.message}
+            {...register("linuxUrl")}
+          />
+        </div>
+
+        <Input
+          label="Fallback / Store Download Link (Optional)"
+          placeholder="https://releases.simantrix.com/desktop/latest"
+          fullWidth
+          hasError={Boolean(errors.downloadUrl)}
+          error={errors.downloadUrl?.message}
+          {...register("downloadUrl")}
+        />
+      </div>
 
       <Textarea
         label="Release Notes / Changelog"
@@ -172,7 +215,8 @@ const ReleaseForm = ({
                 Enforce Mandatory Desktop Update
               </div>
               <div className="text-xs text-[var(--gy-text-secondary)]">
-                Older desktop app clients will require updating before logging in.
+                Older desktop app clients will require updating before logging
+                in.
               </div>
             </div>
             <Toggle
@@ -243,11 +287,7 @@ export const ReleaseFormModal = () => {
     >
       {open &&
         (!release ? (
-          <ReleaseForm
-            key="new-desktop"
-            release={null}
-            defaultApp="DESKTOP"
-          />
+          <ReleaseForm key="new-desktop" release={null} defaultApp="DESKTOP" />
         ) : full ? (
           <ReleaseForm key={full.id} release={full} defaultApp="DESKTOP" />
         ) : detail.error ? (
