@@ -1,9 +1,4 @@
-import type {
-  MarketingAction,
-  MarketingRange,
-  MarketingReport,
-  VisitorsResponse,
-} from "../types";
+import type { MarketingAction, MarketingRange } from "@/features/marketing-analytics/types";
 
 export const setRange = (range: MarketingRange): MarketingAction => ({
   type: "SET_RANGE",
@@ -15,31 +10,7 @@ export const setRefreshing = (refreshing: boolean): MarketingAction => ({
   payload: refreshing,
 });
 
-export const reportSuccess = (report: MarketingReport): MarketingAction => ({
-  type: "REPORT_SUCCESS",
-  payload: report,
-});
-
-export const reportFailure = (error: string): MarketingAction => ({
-  type: "REPORT_FAILURE",
-  payload: error,
-});
-
 export const setVisitsPage = (page: number): MarketingAction => ({
   type: "SET_VISITS_PAGE",
   payload: page,
-});
-
-export const visitsLoading = (): MarketingAction => ({
-  type: "VISITS_LOADING",
-});
-
-export const visitsSuccess = (visits: VisitorsResponse): MarketingAction => ({
-  type: "VISITS_SUCCESS",
-  payload: visits,
-});
-
-export const visitsFailure = (error: string): MarketingAction => ({
-  type: "VISITS_FAILURE",
-  payload: error,
 });

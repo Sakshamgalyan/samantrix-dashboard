@@ -1,22 +1,13 @@
-import type React from "react";
-import type { InvoiceRow, SubscriptionRow } from "./api";
-import type { PaymentsAction } from "./actions";
-import type { InvoiceTab, PaymentsPageState, SubscriptionTab } from "./state";
+import type { ManualPaymentInput, PaymentFilters, PlanCreateInput, PlanTier, PlanUpdateInput, SeatFilters } from "@/features/payments/types/api";
+import type { PaymentsPageState } from "@/features/payments/types/state";
 
 export interface PaymentsContextType {
   state: PaymentsPageState;
-  dispatch: React.Dispatch<PaymentsAction>;
-
-  // Derived (filtered by the active tab + search)
-  visibleSubscriptions: SubscriptionRow[];
-  visibleInvoices: InvoiceRow[];
-
-  // Actions
-  setSubscriptionTab: (tab: SubscriptionTab) => void;
-  setSubscriptionSearch: (search: string) => void;
-  setInvoiceTab: (tab: InvoiceTab) => void;
-  setInvoiceSearch: (search: string) => void;
-
-  // API handlers
-  refresh: () => Promise<void>;
+  setFilters: (filters: Partial<PaymentFilters>) => void;
+  setSeatFilters: (filters: Partial<SeatFilters>) => void;
+  reload: () => Promise<void>;
+  recordManualPayment: (input: ManualPaymentInput) => Promise<{ invoiceNumber: string | null }>;
+  refundPayment: (paymentId: string, amount: number | undefined, reason: string) => Promise<void>;
+  updatePlan: (planTier: PlanTier, input: PlanUpdateInput) => Promise<void>;
+  createPlan: (input: PlanCreateInput) => Promise<void>;
 }

@@ -4,53 +4,68 @@ import React, {
   createContext,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useReducer,
-  useRef,
 } from "react";
 import { useToast } from "@galyan/ui";
-import { useAutoRefresh } from "@/components/admin";
-import type {
-  AddSettingFormValues,
-  CategoryTab,
-  EditSettingFormValues,
-  PlatformSetting,
-  SettingsPageContextType,
-} from "../types";
-import { initialSettingsState, settingsReducer } from "./reducer";
-import * as actions from "./action";
+import { POLL_INTERVAL_MS, queryErrorMessage } from "@/store";
+import type { AddSettingFormValues, EditSettingFormValues } from "@/features/admin-settings/types/forms";
+import type { PlatformSetting } from "@/features/admin-settings/types/api";
+import type { SettingsPageContextType } from "@/features/admin-settings/types/context";
+import type { CategoryTab, SettingsPageState } from "@/features/admin-settings/types/state";
+import { initialSettingsState, settingsReducer } from "@/features/admin-settings/context/reducer";
+import * as actions from "@/features/admin-settings/context/action";
 import {
-  createSettingApi,
-  fetchSettingsApi,
-  getApiErrorMessage,
-  removeSettingApi,
-  updateSettingApi,
-} from "./api";
+  useCreatePlatformSettingMutation,
+  useGetPlatformSettingsQuery,
+  useRemovePlatformSettingMutation,
+  useUpdatePlatformSettingMutation,
+} from "@/features/admin-settings/context/api";
 
-const SettingsPageContext = createContext<SettingsPageContextType | undefined>(
+export const SettingsPageContext = createContext<SettingsPageContextType | undefined>(
   undefined,
 );
 
-export function SettingsPageProvider({
+export const SettingsPageProvider = ({
   children,
 }: {
   children: React.ReactNode;
-}) {
-  const [state, dispatch] = useReducer(settingsReducer, initialSettingsState);
+}) => {
+  const [ui, dispatch] = useReducer(settingsReducer, initialSettingsState);
   const { toast } = useToast();
 
-  // Background refreshes keep the page (and unsaved drafts) on screen.
-  const hasData = useRef(false);
-  useEffect(() => {
-    hasData.current = state.data !== null;
-  }, [state.data]);
+  // Refreshes every minute while open (as before); background refreshes keep drafts on screen
+  const query = useGetPlatformSettingsQuery(undefined, {
+    pollingInterval: POLL_INTERVAL_MS,
+    skipPollingIfUnfocused: true,
+  });
+  const { refetch } = query;
+  const [createSettingMutation] = useCreatePlatformSettingMutation();
+  const [updateSettingMutation] = useUpdatePlatformSettingMutation();
+  const [removeSettingMutation] = useRemovePlatformSettingMutation();
 
-  const load = useCallback(
-    () => fetchSettingsApi(dispatch, hasData.current),
-    [],
-  );
-  useAutoRefresh(load);
+  // Keep the last good data on screen; a failed refresh is reported as stale data
+  const state = useMemo<SettingsPageState>(() => {
+    const data = query.data ?? null;
+    const message = query.error
+      ? queryErrorMessage(query.error, "Could not load the configuration.")
+      : null;
+    return {
+      ...ui,
+      data,
+      loading: query.isLoading,
+      refreshing: query.isFetching,
+      loadError: data ? null : message,
+      refreshError: data ? message : null,
+      fetchedAt: query.fulfilledTimeStamp
+        ? new Date(query.fulfilledTimeStamp).toISOString()
+        : null,
+    };
+  }, [ui, query.data, query.error, query.isLoading, query.isFetching, query.fulfilledTimeStamp]);
+
+  const load = useCallback(async () => {
+    await refetch();
+  }, [refetch]);
 
   const setActiveTab = useCallback((tab: CategoryTab) => {
     dispatch(actions.setActiveTab(tab));
@@ -71,25 +86,27 @@ export function SettingsPageProvider({
       if (draft === undefined) return false;
       dispatch(actions.setSaving(setting.key, true));
       try {
-        await updateSettingApi(setting.key, { value: draft.trim() });
+        await updateSettingMutation({
+          key: setting.key,
+          body: { value: draft.trim() },
+        }).unwrap();
         dispatch(actions.clearDraft(setting.key));
         toast.success(
           setting.isSecret
             ? `Replaced the value of ${setting.label}.`
             : `Saved ${setting.label}.`,
         );
-        await load();
         return true;
       } catch (err) {
         toast.error(
-          getApiErrorMessage(err, `Could not save ${setting.label}.`),
+          queryErrorMessage(err, `Could not save ${setting.label}.`),
         );
         return false;
       } finally {
         dispatch(actions.setSaving(setting.key, false));
       }
     },
-    [drafts, load, toast],
+    [drafts, updateSettingMutation, toast],
   );
 
   const openAdd = useCallback(() => dispatch(actions.setAddOpen(true)), []);
@@ -99,26 +116,25 @@ export function SettingsPageProvider({
     async (values: AddSettingFormValues) => {
       dispatch(actions.setCreating(true));
       try {
-        const created = await createSettingApi({
+        const created = await createSettingMutation({
           key: values.key,
           value: values.value,
           description: values.description || undefined,
           category: values.category,
           isSecret: values.isSecret,
-        });
+        }).unwrap();
         toast.success(`Added ${created.key}.`);
         dispatch(actions.setAddOpen(false));
         dispatch(actions.setActiveTab(created.category));
-        await load();
         return true;
       } catch (err) {
-        toast.error(getApiErrorMessage(err, "Could not add the setting."));
+        toast.error(queryErrorMessage(err, "Could not add the setting."));
         return false;
       } finally {
         dispatch(actions.setCreating(false));
       }
     },
-    [load, toast],
+    [createSettingMutation, toast],
   );
 
   const openEdit = useCallback((setting: PlatformSetting) => {
@@ -132,22 +148,21 @@ export function SettingsPageProvider({
       if (!editTarget) return false;
       dispatch(actions.setUpdatingDetails(true));
       try {
-        await updateSettingApi(editTarget.key, {
-          description: values.description,
-          category: values.category,
-        });
+        await updateSettingMutation({
+          key: editTarget.key,
+          body: { description: values.description, category: values.category },
+        }).unwrap();
         toast.success(`Updated ${editTarget.key}.`);
         dispatch(actions.setEditTarget(null));
-        await load();
         return true;
       } catch (err) {
-        toast.error(getApiErrorMessage(err, "Could not update the setting."));
+        toast.error(queryErrorMessage(err, "Could not update the setting."));
         return false;
       } finally {
         dispatch(actions.setUpdatingDetails(false));
       }
     },
-    [editTarget, load, toast],
+    [editTarget, updateSettingMutation, toast],
   );
 
   const openDelete = useCallback((setting: PlatformSetting) => {
@@ -163,7 +178,7 @@ export function SettingsPageProvider({
     if (!deleteTarget) return;
     dispatch(actions.setDeleting(true));
     try {
-      const result = await removeSettingApi(deleteTarget.key);
+      const result = await removeSettingMutation(deleteTarget.key).unwrap();
       dispatch(actions.clearDraft(deleteTarget.key));
       toast.success(
         result.resetToDefault
@@ -171,13 +186,12 @@ export function SettingsPageProvider({
           : `Deleted ${deleteTarget.key}.`,
       );
       dispatch(actions.setDeleteTarget(null));
-      await load();
     } catch (err) {
-      toast.error(getApiErrorMessage(err, "Could not remove the setting."));
+      toast.error(queryErrorMessage(err, "Could not remove the setting."));
     } finally {
       dispatch(actions.setDeleting(false));
     }
-  }, [deleteTarget, load, toast]);
+  }, [deleteTarget, removeSettingMutation, toast]);
 
   const value = useMemo<SettingsPageContextType>(
     () => ({
@@ -223,14 +237,7 @@ export function SettingsPageProvider({
       {children}
     </SettingsPageContext.Provider>
   );
-}
+};
 
-export function useSettingsContext(): SettingsPageContextType {
-  const ctx = useContext(SettingsPageContext);
-  if (!ctx) {
-    throw new Error(
-      "useSettingsContext must be used within a SettingsPageProvider",
-    );
-  }
-  return ctx;
-}
+export * from "@/features/admin-settings/context/hooks";
+

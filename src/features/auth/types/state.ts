@@ -1,4 +1,4 @@
-import type { LoginPortal } from "../context/auth-context";
+import type { LoginPortal } from "@/features/auth/context/auth-context";
 
 export type AuthMode = "login" | "register-org" | "forgot-password";
 

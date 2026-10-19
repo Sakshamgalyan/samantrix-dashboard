@@ -2,19 +2,19 @@
 
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/lib/form-resolver";
 import { Button, Dropdown, Modal, Textarea } from "@galyan/ui";
 import { Pencil } from "lucide-react";
-import { useSettingsContext } from "../context";
+import { useSettingsContext } from "@/features/admin-settings/context";
 import {
   editSettingSchema,
   type EditSettingFormValues,
-  type SettingCategory,
-} from "../types";
-import { CATEGORY_OPTIONS } from "../common/constants";
+} from "@/features/admin-settings/types/forms";
+import type { SettingCategory } from "@/features/admin-settings/types/api";
+import { CATEGORY_OPTIONS } from "@/features/admin-settings/common/constants";
 
 /** Glass dialog for a custom setting's description and category (values are edited inline). */
-export function EditSettingModal() {
+export const EditSettingModal = () => {
   const { state, closeEdit, updateDetails } = useSettingsContext();
   const target = state.editTarget;
   const {
@@ -43,7 +43,6 @@ export function EditSettingModal() {
 
   return (
     <Modal
-      variant="glass"
       isOpen={target !== null}
       onClose={() => !state.updatingDetails && closeEdit()}
       size="sm"
@@ -51,7 +50,7 @@ export function EditSettingModal() {
       title="Edit setting details"
       subtitle={target?.key}
       footer={
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
             variant="secondary"
             size="sm"
@@ -85,7 +84,6 @@ export function EditSettingModal() {
           render={({ field }) => (
             <Dropdown
               label="Category"
-              variant="glass"
               options={CATEGORY_OPTIONS}
               value={field.value}
               onChange={(v) => field.onChange(v as SettingCategory)}
@@ -102,4 +100,4 @@ export function EditSettingModal() {
       </form>
     </Modal>
   );
-}
+};

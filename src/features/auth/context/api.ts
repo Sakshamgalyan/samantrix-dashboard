@@ -1,14 +1,14 @@
 import type React from "react";
-import { api, ApiError, setStoredToken, clearStoredToken } from "@/lib/api";
-import type { LoginPortal } from "./auth-context";
+import { api, ApiError, isAuthenticatedResponse } from "@/lib/api-client/apiClient";
+import type { LoginPortal } from "@/features/auth/context/auth-context";
+import type { ActiveSessionInfo } from "@/features/auth/types/state";
+import type { AuthAction } from "@/features/auth/types/actions";
 import type {
-  ActiveSessionInfo,
-  AuthAction,
   LoginFormValues,
   TwoFactorFormValues,
   OrgRegistrationFormValues,
-  GenerateSecretResponse,
-} from "../types";
+} from "@/features/auth/types/forms";
+import type { GenerateSecretResponse } from "@/features/auth/types/api";
 import {
   setLoading,
   setError,
@@ -19,27 +19,18 @@ import {
   setApiResponse,
   setSessionConflict,
   setPortalSelection,
-} from "./action";
+} from "@/features/auth/context/action";
 
 const ACTIVE_SESSION_EXISTS = "ACTIVE_SESSION_EXISTS";
 
-/** Fields of a login / 2FA / registration response that complete a sign-in. */
+/**
+ * Fields of a login / 2FA / registration response that complete a sign-in. The BFF moves the
+ * tokens into httpOnly cookies and answers `authenticated: true` instead.
+ */
 interface SignInResult {
-  accessToken?: string;
-  refreshToken?: string;
-  tokens?: { accessToken?: string; refreshToken?: string };
+  authenticated?: boolean;
   user?: { organization?: { name?: string } | null };
   session?: { requiresPortalSelection?: boolean } | null;
-}
-
-/** Stores the issued token pair; false when the response carried no access token. */
-function storeTokens(response: SignInResult | null | undefined): boolean {
-  const accessToken = response?.tokens?.accessToken || response?.accessToken;
-  const refreshToken = response?.tokens?.refreshToken || response?.refreshToken;
-  if (!accessToken) return false;
-
-  setStoredToken(accessToken, refreshToken);
-  return true;
 }
 
 /** Developers choose a console before entering; true when the picker was opened. */
@@ -103,7 +94,7 @@ export async function loginApi(
       return false;
     }
 
-    if (storeTokens(response)) {
+    if (isAuthenticatedResponse(response)) {
       if (openPortalSelectionIfNeeded(response, dispatch)) return true;
       dispatch(setLoading(false));
       if (onSuccess) {
@@ -154,7 +145,7 @@ export async function verify2FAApi(
     // Save full API response in context
     dispatch(setApiResponse(response as Record<string, unknown>));
 
-    if (storeTokens(response)) {
+    if (isAuthenticatedResponse(response)) {
       if (openPortalSelectionIfNeeded(response, dispatch)) return true;
       dispatch(setLoading(false));
       if (onSuccess) {
@@ -266,14 +257,7 @@ export async function registerOrganizationApi(
     // Save response in context
     dispatch(setApiResponse(response as Record<string, unknown>));
 
-    const accessToken =
-      response?.tokens?.accessToken || response?.accessToken;
-    const refreshToken =
-      response?.tokens?.refreshToken || response?.refreshToken;
-
-    if (accessToken) {
-      setStoredToken(accessToken, refreshToken);
-
+    if (isAuthenticatedResponse(response)) {
       if (response.backupCodes && response.backupCodes.length > 0) {
         dispatch(setBackupCodes(response.backupCodes));
       } else {
@@ -331,12 +315,12 @@ export async function abandonSignInApi(): Promise<void> {
   } catch {
     // Session already gone
   }
-  clearStoredToken();
+  // The BFF cleared the session cookies whatever the backend answered
 }
 
-export function getApiErrorMessage(err: unknown, fallback: string): string {
+export const getApiErrorMessage = (err: unknown, fallback: string): string => {
   return err instanceof ApiError ? err.message : fallback;
-}
+};
 
 // ── Forgot password ──────────────────────────────────────────────────────
 

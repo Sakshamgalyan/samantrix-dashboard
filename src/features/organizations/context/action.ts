@@ -1,20 +1,11 @@
 import type {
   AdminOrganization,
-  AdminOrganizationDetail,
-  AdminOrganizationsResponse,
+  FormDialogState,
   OrganizationsAction,
+  PlanFilter,
   SettableOrgStatus,
   StatusTab,
-} from "../types";
-
-export const loadSuccess = (
-  data: AdminOrganizationsResponse,
-): OrganizationsAction => ({ type: "LOAD_SUCCESS", payload: data });
-
-export const loadFailure = (error: string): OrganizationsAction => ({
-  type: "LOAD_FAILURE",
-  payload: error,
-});
+} from "@/features/organizations/types";
 
 export const setRefreshing = (refreshing: boolean): OrganizationsAction => ({
   type: "SET_REFRESHING",
@@ -31,21 +22,19 @@ export const setSearch = (search: string): OrganizationsAction => ({
   payload: search,
 });
 
+export const applySearch = (search: string): OrganizationsAction => ({
+  type: "APPLY_SEARCH",
+  payload: search,
+});
+
+export const setPage = (page: number): OrganizationsAction => ({
+  type: "SET_PAGE",
+  payload: page,
+});
+
 export const openDetail = (orgId: string): OrganizationsAction => ({
   type: "OPEN_DETAIL",
   payload: orgId,
-});
-
-export const detailSuccess = (
-  detail: AdminOrganizationDetail,
-): OrganizationsAction => ({ type: "DETAIL_SUCCESS", payload: detail });
-
-export const detailFailure = (
-  orgId: string,
-  error: string,
-): OrganizationsAction => ({
-  type: "DETAIL_FAILURE",
-  payload: { orgId, error },
 });
 
 export const closeDetail = (): OrganizationsAction => ({
@@ -75,3 +64,20 @@ export const setStatusSubmitting = (
 export const closeStatusDialog = (): OrganizationsAction => ({
   type: "CLOSE_STATUS_DIALOG",
 });
+
+export const setPlan = (plan: PlanFilter): OrganizationsAction => ({
+  type: "SET_PLAN",
+  payload: plan,
+});
+
+export const setFormDialog = (
+  dialog: FormDialogState | null,
+): OrganizationsAction => ({ type: "SET_FORM_DIALOG", payload: dialog });
+
+export const setSubscriptionDialog = (
+  org: AdminOrganization | null,
+): OrganizationsAction => ({ type: "SET_SUBSCRIPTION_DIALOG", payload: org });
+
+export const setDeleteDialog = (
+  org: AdminOrganization | null,
+): OrganizationsAction => ({ type: "SET_DELETE_DIALOG", payload: org });

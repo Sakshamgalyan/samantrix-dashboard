@@ -1,4 +1,4 @@
-import type { AuthMode, SessionConflict, PortalSelection } from "./state";
+import type { AuthMode, SessionConflict, PortalSelection } from "@/features/auth/types/state";
 
 export type AuthAction =
   | { type: "SET_AUTH_MODE"; payload: AuthMode }

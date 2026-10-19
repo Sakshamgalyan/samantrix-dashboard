@@ -1,5 +1,5 @@
 import type { ChipVariant } from "@galyan/ui";
-import type { OrgPlanTier, OrgStatus } from "../types";
+import type { OrgPlanTier, OrgStatus } from "@/features/organizations/types";
 
 export const STATUS_META: Record<
   OrgStatus,
@@ -38,7 +38,14 @@ export const CAN_SUSPEND: OrgStatus[] = [
   "TRIALING",
   "PENDING",
 ];
-export const CAN_ACTIVATE: OrgStatus[] = ["SUSPENDED", "PENDING", "CANCELLED"];
+export const CAN_ACTIVATE: OrgStatus[] = [
+  "SUSPENDED",
+  "PENDING",
+  "CANCELLED",
+  "TRIAL",
+  "TRIALING",
+  "DELETED",
+];
 
 export const initials = (name: string) =>
   name
@@ -47,3 +54,65 @@ export const initials = (name: string) =>
     .slice(0, 2)
     .map((w) => w.charAt(0).toUpperCase())
     .join("") || "?";
+
+export const STATUS_FILTER_OPTIONS = [
+  { value: "ALL", label: "All statuses" },
+  { value: "ACTIVE", label: "Active" },
+  { value: "TRIAL", label: "Trial" },
+  { value: "PENDING", label: "Pending" },
+  { value: "SUSPENDED", label: "Suspended" },
+  { value: "CANCELLED", label: "Cancelled / deleted" },
+];
+
+export const PLAN_FILTER_OPTIONS = [
+  { value: "ALL", label: "All plans" },
+  ...PLAN_ORDER.map((p) => ({ value: p, label: PLAN_META[p].label })),
+];
+
+export const BILLING_OPTIONS = [
+  { value: "MONTHLY", label: "Monthly" },
+  { value: "YEARLY", label: "Yearly" },
+];
+
+export const CREATE_STATUS_OPTIONS = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "TRIAL", label: "Trial" },
+  { value: "PENDING", label: "Pending" },
+];
+
+export const SUBSCRIPTION_STATUS_OPTIONS = [
+  { value: "active", label: "Active" },
+  { value: "trialing", label: "Trialing" },
+  { value: "past_due", label: "Past due" },
+  { value: "canceled", label: "Canceled" },
+];
+
+export const COMPANY_SIZE_OPTIONS = [
+  "1-10",
+  "11-50",
+  "51-200",
+  "201-500",
+  "501-1000",
+  "1000+",
+].map((s) => ({ value: s, label: `${s} employees` }));
+
+export const ORG_TYPE_OPTIONS = [
+  "Private Corporation",
+  "Public Company",
+  "Startup",
+  "Partnership",
+  "Sole Proprietorship",
+  "Non-profit",
+  "Government",
+  "Educational Institution",
+].map((t) => ({ value: t, label: t }));
+
+/** Seats in use vs purchased (subscription seats, else the member limit). */
+export const seatsOf = (org: {
+  memberCount: number;
+  maxMembers: number;
+  subscription: { seats: number } | null;
+}) => ({
+  used: org.memberCount,
+  purchased: org.subscription?.seats ?? org.maxMembers,
+});

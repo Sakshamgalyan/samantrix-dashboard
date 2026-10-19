@@ -7,34 +7,66 @@ import React, {
   useMemo,
   useReducer,
 } from "react";
-import { useAutoRefresh } from "@/components/admin";
-import type { MarketingContextType, MarketingRange } from "../types";
-import { initialMarketingState, marketingReducer } from "./reducer";
-import * as actions from "./action";
-import { loadReportApi, loadVisitsApi } from "./api";
+import { POLL_INTERVAL_MS, queryErrorMessage } from "@/store";
+import { pageParams } from "@/features/common/pagination";
+import type { MarketingContextType, MarketingPageState, MarketingRange } from "@/features/marketing-analytics/types";
+import { initialMarketingState, marketingReducer } from "@/features/marketing-analytics/context/reducer";
+import * as actions from "@/features/marketing-analytics/context/action";
+import { useGetMarketingReportQuery, useGetRecentVisitsQuery } from "@/features/marketing-analytics/context/api";
 
-const MarketingContext = createContext<MarketingContextType | undefined>(
+export const MarketingContext = createContext<MarketingContextType | undefined>(
   undefined,
 );
 
-export function MarketingProvider({ children }: { children: React.ReactNode }) {
-  // All page state lives in the reducer
-  const [state, dispatch] = useReducer(marketingReducer, initialMarketingState);
-  const { range, visitsPage } = state;
+const POLL = { pollingInterval: POLL_INTERVAL_MS, skipPollingIfUnfocused: true } as const;
 
-  // Each loader re-runs when its input changes, and every 60 s while the page is open
-  const loadReport = useCallback(() => loadReportApi(range, dispatch), [range]);
-  const loadVisits = useCallback(
-    () => loadVisitsApi(visitsPage, dispatch),
-    [visitsPage],
+export const MarketingProvider = ({ children }: { children: React.ReactNode }) => {
+  // The reducer holds only UI state; the report and visits come from the shared cache
+  const [ui, dispatch] = useReducer(marketingReducer, initialMarketingState);
+  const { range, visitsPage } = ui;
+
+  const reportQuery = useGetMarketingReportQuery(range, POLL);
+  const visitsArgs = useMemo(() => pageParams(visitsPage), [visitsPage]);
+  const visitsQuery = useGetRecentVisitsQuery(visitsArgs, POLL);
+  const refetchReport = reportQuery.refetch;
+  const refetchVisits = visitsQuery.refetch;
+
+  // Keep the previous report / page on screen (with a spinning refresh) until the new one arrives
+  const state = useMemo<MarketingPageState>(
+    () => ({
+      ...ui,
+      refreshing: ui.refreshing || (reportQuery.isFetching && !reportQuery.currentData),
+      report: reportQuery.data ?? null,
+      error: reportQuery.error
+        ? queryErrorMessage(reportQuery.error, "Couldn't load marketing analytics.")
+        : null,
+      visits: visitsQuery.data ?? null,
+      visitsLoading: visitsQuery.isFetching && !visitsQuery.currentData,
+      visitsError: visitsQuery.error
+        ? queryErrorMessage(visitsQuery.error, "Couldn't load recent visits.")
+        : null,
+    }),
+    [
+      ui,
+      reportQuery.data,
+      reportQuery.currentData,
+      reportQuery.isFetching,
+      reportQuery.error,
+      visitsQuery.data,
+      visitsQuery.currentData,
+      visitsQuery.isFetching,
+      visitsQuery.error,
+    ],
   );
-  useAutoRefresh(loadReport);
-  useAutoRefresh(loadVisits);
 
   const refresh = useCallback(async () => {
     dispatch(actions.setRefreshing(true));
-    await Promise.all([loadReport(), loadVisits()]);
-  }, [loadReport, loadVisits]);
+    try {
+      await Promise.all([refetchReport(), refetchVisits()]);
+    } finally {
+      dispatch(actions.setRefreshing(false));
+    }
+  }, [refetchReport, refetchVisits]);
 
   const setRange = useCallback(
     (next: MarketingRange) => dispatch(actions.setRange(next)),
@@ -55,18 +87,10 @@ export function MarketingProvider({ children }: { children: React.ReactNode }) {
       {children}
     </MarketingContext.Provider>
   );
-}
+};
 
-export function useMarketingContext(): MarketingContextType {
-  const context = useContext(MarketingContext);
-  if (!context) {
-    throw new Error(
-      "useMarketingContext must be used within a MarketingProvider",
-    );
-  }
-  return context;
-}
+export * from "@/features/marketing-analytics/context/hooks";
 
-export * from "./reducer";
-export * from "./action";
-export * from "./api";
+export * from "@/features/marketing-analytics/context/reducer";
+export * from "@/features/marketing-analytics/context/action";
+export * from "@/features/marketing-analytics/context/api";

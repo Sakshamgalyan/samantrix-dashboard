@@ -1,8 +1,8 @@
 "use client";
 
-import { Input, Toggle } from "@galyan/ui";
+import { Input, Toggle, Typography } from "@galyan/ui";
 import { KeyRound } from "lucide-react";
-import type { PlatformSetting } from "../types";
+import type { PlatformSetting } from "@/features/admin-settings/types/api";
 
 interface SettingControlProps {
   setting: PlatformSetting;
@@ -14,13 +14,13 @@ interface SettingControlProps {
 }
 
 /** The Galyan input that fits a setting's type: Toggle, number, email, text or write-only secret. */
-export function SettingControl({
+export const SettingControl = ({
   setting,
   text,
   error,
   disabled,
   onChange,
-}: SettingControlProps) {
+}: SettingControlProps) => {
   if (setting.isSecret) {
     return (
       <Input
@@ -47,9 +47,9 @@ export function SettingControl({
     const on = text === "true";
     return (
       <div className="flex h-9 items-center justify-end gap-3">
-        <span className="text-xs font-medium text-[var(--gy-text-secondary)]">
+        <Typography variant="span" className="text-xs font-medium text-[var(--gy-text-secondary)]">
           {on ? "On" : "Off"}
-        </span>
+        </Typography>
         <Toggle
           size="md"
           checked={on}
@@ -88,4 +88,4 @@ export function SettingControl({
       aria-label={setting.label}
     />
   );
-}
+};

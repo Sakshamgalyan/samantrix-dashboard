@@ -1,14 +1,20 @@
-import type { MarketingRange, MarketingReport, VisitorsResponse } from "./api";
+import type { MarketingRange, MarketingReport, VisitorsResponse } from "@/features/marketing-analytics/types/api";
 
-export interface MarketingPageState {
+/** Page UI state held in the reducer; server data comes from the RTK Query cache. */
+export interface MarketingUiState {
   range: MarketingRange;
+  /** Manual refresh in flight. */
+  refreshing: boolean;
+  visitsPage: number;
+}
+
+/** What components read: the UI state plus the cached server data. */
+export interface MarketingPageState extends MarketingUiState {
   report: MarketingReport | null;
   /** Report load error (banner over stale data, or the full-page error on first load). */
   error: string | null;
-  refreshing: boolean;
 
   visits: VisitorsResponse | null;
-  visitsPage: number;
   visitsLoading: boolean;
   visitsError: string | null;
 }

@@ -1,8 +1,6 @@
-import type { FeatureDialog, FeatureFlagsOverview } from "./state";
+import type { FeatureDialog } from "@/features/feature-flags/types/state";
 
 export type FeatureFlagsAction =
-  | { type: "LOAD_SUCCESS"; payload: FeatureFlagsOverview }
-  | { type: "LOAD_FAILURE"; payload: string }
   | { type: "SET_REFRESHING"; payload: boolean }
   | { type: "SET_CATEGORY"; payload: string }
   | { type: "SET_SEARCH"; payload: string }

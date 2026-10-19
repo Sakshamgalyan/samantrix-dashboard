@@ -1,4 +1,4 @@
-import type { PlanTier } from "./state";
+import type { PlanTier } from "@/features/feature-flags/types/state";
 
 /** POST /feature-flags */
 export interface CreateFeatureRequest {
@@ -8,6 +8,10 @@ export interface CreateFeatureRequest {
   category: string;
   defaultEnabled: boolean;
   minPlanTier: PlanTier;
+  isEnabled: boolean;
+  isBeta: boolean;
+  /** null removes the add-on price */
+  addonPriceMonthly: number | null;
 }
 
 /** PATCH /feature-flags/:featureKey (the key itself is immutable). */

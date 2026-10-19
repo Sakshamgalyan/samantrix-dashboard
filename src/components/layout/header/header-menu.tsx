@@ -1,0 +1,1 @@
+﻿"use client";import { Menu, type MenuProps } from "@galyan/ui";/** * @deprecated Use `Menu` directly from `@galyan/ui`. */export const HeaderMenu = Menu;export type HeaderMenuProps = MenuProps;export default HeaderMenu;

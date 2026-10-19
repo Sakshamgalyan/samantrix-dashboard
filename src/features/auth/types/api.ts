@@ -6,12 +6,8 @@ export interface LoginRequest {
 export interface LoginResponse {
   requires2FA?: boolean;
   tempToken?: string;
-  accessToken?: string;
-  refreshToken?: string;
-  tokens?: {
-    accessToken: string;
-    refreshToken?: string;
-  };
+  /** Set by the BFF once it has stored the session in httpOnly cookies. */
+  authenticated?: boolean;
   user?: Record<string, unknown>;
   error?: string;
 }
@@ -22,12 +18,8 @@ export interface Verify2FARequest {
 }
 
 export interface Verify2FAResponse {
-  accessToken?: string;
-  refreshToken?: string;
-  tokens?: {
-    accessToken: string;
-    refreshToken?: string;
-  };
+  /** Set by the BFF once it has stored the session in httpOnly cookies. */
+  authenticated?: boolean;
   user?: Record<string, unknown>;
   error?: string;
 }
@@ -71,12 +63,8 @@ export interface RegisterOrgRequest {
 }
 
 export interface RegisterOrgResponse {
-  accessToken?: string;
-  refreshToken?: string;
-  tokens?: {
-    accessToken: string;
-    refreshToken?: string;
-  };
+  /** Set by the BFF once it has stored the session in httpOnly cookies. */
+  authenticated?: boolean;
   backupCodes?: string[];
   organization?: Record<string, unknown>;
   user?: Record<string, unknown>;

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { RELEASE_APPS, RELEASE_CHANNELS } from "./api";
+import { RELEASE_APPS, RELEASE_CHANGE_TYPES, RELEASE_CHANNELS } from "@/features/versioning/types/api";
 
 /** Same rule as the backend: 1.4.0, 1.4.0-beta.2, 2.0.0+build.7 */
 export const SEMVER_PATTERN =
@@ -21,6 +21,21 @@ export const releaseFormSchema = z.object({
     .max(120, "Keep the title under 120 characters"),
   notes: z.string().max(10000, "Release notes are too long"),
   isMandatory: z.boolean(),
+  showOnHome: z.boolean(),
+  summary: z.string().trim().max(280, "Keep the summary under 280 characters"),
+  changes: z
+    .array(
+      z.object({
+        type: z.enum(RELEASE_CHANGE_TYPES),
+        text: z.string().trim().max(300, "Keep each change under 300 characters"),
+      }),
+    )
+    .max(50, "At most 50 changes"),
+  downloadUrl: z
+    .string()
+    .trim()
+    .max(500, "Link is too long")
+    .refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v), "Use a full http(s) link"),
 });
 
 export type ReleaseFormValues = z.infer<typeof releaseFormSchema>;

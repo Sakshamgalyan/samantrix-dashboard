@@ -2,7 +2,7 @@
 
 import { Banner, Button, Modal, Spinner, Typography } from "@galyan/ui";
 import { Building2, ChevronRight, Code2 } from "lucide-react";
-import type { LoginPortal } from "../context/auth-context";
+import type { LoginPortal } from "@/features/auth/context/auth-context";
 
 interface PortalSelectModalProps {
   isOpen: boolean;
@@ -26,14 +26,14 @@ interface PortalOption {
  * Shown to developer accounts right after authentication: pick the console this
  * session opens in. The choice is stored on the login session.
  */
-export function PortalSelectModal({
+export const PortalSelectModal = ({
   isOpen,
   organizationName,
   submitting,
   error,
   onSelect,
   onCancel,
-}: PortalSelectModalProps) {
+}: PortalSelectModalProps) => {
   const options: PortalOption[] = [
     {
       id: "DEVELOPER",
@@ -54,9 +54,9 @@ export function PortalSelectModal({
 
   return (
     <Modal
-      variant="glass"
       isOpen={isOpen}
       size="md"
+      variant="glass"
       title="How do you want to sign in?"
       subtitle="Your account has developer access. Choose the console for this session."
       showCloseButton={false}
@@ -102,4 +102,4 @@ export function PortalSelectModal({
       </div>
     </Modal>
   );
-}
+};

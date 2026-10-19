@@ -1,12 +1,12 @@
 "use client";
 
 import React from "react";
-import { AuthPageProvider } from "./context";
-import { AuthLayout } from "./components/auth-layout";
-import { AuthContent } from "./components/auth-content";
-import type { AuthMode } from "./types";
+import { AuthPageProvider } from "@/features/auth/context";
+import { AuthLayout } from "@/features/auth/components/auth-layout";
+import { AuthContent } from "@/features/auth/components/auth-content";
+import type { AuthMode } from "@/features/auth/types/state";
 
-export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) {
+export const AuthPage = ({ initialMode = "login" }: { initialMode?: AuthMode }) => {
   return (
     <AuthPageProvider initialMode={initialMode}>
       <AuthLayout>
@@ -14,6 +14,6 @@ export function AuthPage({ initialMode = "login" }: { initialMode?: AuthMode }) 
       </AuthLayout>
     </AuthPageProvider>
   );
-}
+};
 
 export default AuthPage;

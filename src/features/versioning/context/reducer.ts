@@ -1,47 +1,40 @@
-import type { VersioningAction, VersioningState } from "../types";
+import type { VersioningAction, VersioningUiState } from "@/features/versioning/types";
 
-export const initialVersioningState: VersioningState = {
-  releases: [],
-  summary: null,
-  loaded: false,
+export const initialVersioningState: VersioningUiState = {
   refreshing: false,
-  error: null,
-  appFilter: "ALL",
+  appFilter: "DESKTOP",
   channelFilter: "ALL",
   statusFilter: "ALL",
+  search: "",
+  page: 1,
   dialog: null,
   submitting: false,
 };
 
-export function versioningReducer(
-  state: VersioningState,
+/** UI state only: releases and summary come from the RTK Query cache. */
+export const versioningReducer = (
+  state: VersioningUiState,
   action: VersioningAction,
-): VersioningState {
+): VersioningUiState => {
   switch (action.type) {
-    case "LOAD_SUCCESS":
-      return {
-        ...state,
-        releases: action.payload.releases,
-        summary: action.payload.summary,
-        loaded: true,
-        refreshing: false,
-        error: null,
-      };
-
-    case "LOAD_FAILURE":
-      return { ...state, error: action.payload, refreshing: false };
-
     case "SET_REFRESHING":
       return { ...state, refreshing: action.payload };
 
+    // A filter change starts again from the first page
     case "SET_APP_FILTER":
-      return { ...state, appFilter: action.payload };
+      return { ...state, appFilter: action.payload, page: 1 };
 
     case "SET_CHANNEL_FILTER":
-      return { ...state, channelFilter: action.payload };
+      return { ...state, channelFilter: action.payload, page: 1 };
 
     case "SET_STATUS_FILTER":
-      return { ...state, statusFilter: action.payload };
+      return { ...state, statusFilter: action.payload, page: 1 };
+
+    case "SET_SEARCH":
+      return { ...state, search: action.payload, page: 1 };
+
+    case "SET_PAGE":
+      return { ...state, page: Math.max(1, action.payload) };
 
     case "OPEN_DIALOG":
       return { ...state, dialog: action.payload, submitting: false };
@@ -60,4 +53,4 @@ export function versioningReducer(
     default:
       return state;
   }
-}
+};

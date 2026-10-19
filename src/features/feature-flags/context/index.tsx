@@ -8,60 +8,86 @@ import React, {
   useReducer,
 } from "react";
 import { useToast } from "@galyan/ui";
-import { useAuth } from "@/lib/auth-context";
-import { useAutoRefresh } from "@/components/admin";
+import { useAuth } from "@/features/auth";
+import { POLL_INTERVAL_MS, queryErrorMessage } from "@/store";
+import { hasPermission } from "@/utils/roles";
 import {
   ALL_CATEGORIES,
-  DEFAULT_CATEGORY,
+  CATEGORY_SUGGESTIONS,
   FALLBACK_ERROR,
-} from "../common/constants";
+} from "@/features/feature-flags/common/constants";
 import {
   NEW_CATEGORY,
   type FeatureFlag,
   type FeatureFlagsContextType,
+  type FeatureFlagsState,
   type FeatureFormValues,
-} from "../types";
-import { featureFlagsReducer, initialFeatureFlagsState } from "./reducer";
-import * as actions from "./action";
+} from "@/features/feature-flags/types";
+import { featureFlagsReducer, initialFeatureFlagsState } from "@/features/feature-flags/context/reducer";
+import * as actions from "@/features/feature-flags/context/action";
 import {
-  createFeatureApi,
-  deleteFeatureApi,
-  getApiErrorMessage,
-  importDefaultsApi,
-  loadFeatureFlagsApi,
-  updateFeatureApi,
-} from "./api";
+  useCreateFeatureMutation,
+  useDeleteFeatureMutation,
+  useGetFeatureFlagsQuery,
+  useImportDefaultFeaturesMutation,
+  useUpdateFeatureMutation,
+} from "@/features/feature-flags/context/api";
 
-const MANAGER_ROLES = new Set(["SUPERADMIN", "PLATFORM_ADMIN"]);
+const POLLING = {
+  pollingInterval: POLL_INTERVAL_MS,
+  skipPollingIfUnfocused: true,
+} as const;
 
-const FeatureFlagsContext = createContext<FeatureFlagsContextType | undefined>(
+export const FeatureFlagsContext = createContext<FeatureFlagsContextType | undefined>(
   undefined,
 );
 
-export function FeatureFlagsProvider({
+export const FeatureFlagsProvider = ({
   children,
 }: {
   children: React.ReactNode;
-}) {
+}) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [state, dispatch] = useReducer(
+  const [ui, dispatch] = useReducer(
     featureFlagsReducer,
     initialFeatureFlagsState,
   );
 
-  const canManage = Boolean(
-    (user?.platformRole && MANAGER_ROLES.has(user.platformRole)) ||
-    user?.role === "SUPERADMIN",
-  );
+  const canManage = hasPermission(user, "features:manage");
 
-  const load = useCallback(() => loadFeatureFlagsApi(dispatch), []);
-  useAutoRefresh(load);
+  // One cached catalog query, refreshed every minute while the page is open
+  const query = useGetFeatureFlagsQuery(undefined, POLLING);
+  const { refetch } = query;
+  const [createFeature] = useCreateFeatureMutation();
+  const [updateFeature] = useUpdateFeatureMutation();
+  const [deleteFeatureMutation] = useDeleteFeatureMutation();
+  const [importDefaultFeatures] = useImportDefaultFeaturesMutation();
+
+  // Keep the last good catalog on screen; the error only shows when there is nothing cached
+  const state = useMemo<FeatureFlagsState>(() => {
+    const overview = query.data ?? null;
+    const categories = new Set(overview?.features.map((f) => f.category));
+    return {
+      ...ui,
+      overview,
+      loadError: query.error
+        ? queryErrorMessage(query.error, "Couldn't load the feature catalog.")
+        : null,
+      // Drop a category tab whose last feature was deleted or moved
+      category:
+        !overview ||
+        ui.category === ALL_CATEGORIES ||
+        categories.has(ui.category)
+          ? ui.category
+          : ALL_CATEGORIES,
+    };
+  }, [ui, query.data, query.error]);
 
   const refresh = useCallback(() => {
     dispatch(actions.setRefreshing(true));
-    void load();
-  }, [load]);
+    void refetch().finally(() => dispatch(actions.setRefreshing(false)));
+  }, [refetch]);
 
   const setCategory = useCallback(
     (category: string) => dispatch(actions.setCategory(category)),
@@ -101,46 +127,73 @@ export function FeatureFlagsProvider({
         category,
         defaultEnabled: values.defaultEnabled,
         minPlanTier: values.minPlanTier,
+        isEnabled: values.isEnabled,
+        isBeta: values.isBeta,
+        addonPriceMonthly: values.addonPrice ? Number(values.addonPrice) : null,
       };
 
       dispatch(actions.setSubmitting(true));
       try {
         if (dialog.kind === "create") {
-          await createFeatureApi({ featureKey: values.featureKey, ...fields });
+          await createFeature({ featureKey: values.featureKey, ...fields }).unwrap();
           toast.success(`Added ${values.name} to the catalog.`);
         } else {
-          await updateFeatureApi(dialog.feature.featureKey, fields);
+          await updateFeature({ featureKey: dialog.feature.featureKey, body: fields }).unwrap();
           toast.success(`Saved ${values.name}.`);
         }
+        // The mutation invalidates the cached catalog, which refetches it once
         dispatch(actions.setDialog(null));
-        await load();
         return true;
       } catch (err) {
-        toast.error(getApiErrorMessage(err, FALLBACK_ERROR));
+        toast.error(queryErrorMessage(err, FALLBACK_ERROR));
         return false;
       } finally {
         dispatch(actions.setSubmitting(false));
       }
     },
-    [state.dialog, toast, load],
+    [state.dialog, toast, createFeature, updateFeature],
   );
 
   const toggleDefault = useCallback(
     async (feature: FeatureFlag, enabled: boolean) => {
       dispatch(actions.setToggling(feature.featureKey));
       try {
-        await updateFeatureApi(feature.featureKey, { defaultEnabled: enabled });
+        await updateFeature({
+          featureKey: feature.featureKey,
+          body: { defaultEnabled: enabled },
+        }).unwrap();
         toast.success(
           `${feature.name} is now ${enabled ? "on" : "off"} by default for new organizations.`,
         );
-        await load();
       } catch (err) {
-        toast.error(getApiErrorMessage(err, FALLBACK_ERROR));
+        toast.error(queryErrorMessage(err, FALLBACK_ERROR));
       } finally {
         dispatch(actions.setToggling(null));
       }
     },
-    [toast, load],
+    [toast, updateFeature],
+  );
+
+  const toggleGlobal = useCallback(
+    async (feature: FeatureFlag, enabled: boolean) => {
+      dispatch(actions.setToggling(feature.featureKey));
+      try {
+        await updateFeature({
+          featureKey: feature.featureKey,
+          body: { isEnabled: enabled },
+        }).unwrap();
+        toast.success(
+          enabled
+            ? `${feature.name} is live again.`
+            : `${feature.name} is switched off for every organization.`,
+        );
+      } catch (err) {
+        toast.error(queryErrorMessage(err, FALLBACK_ERROR));
+      } finally {
+        dispatch(actions.setToggling(null));
+      }
+    },
+    [toast, updateFeature],
   );
 
   const deleteFeature = useCallback(async () => {
@@ -148,37 +201,35 @@ export function FeatureFlagsProvider({
     if (dialog?.kind !== "delete") return;
     dispatch(actions.setSubmitting(true));
     try {
-      const result = await deleteFeatureApi(dialog.feature.featureKey);
+      const result = await deleteFeatureMutation(dialog.feature.featureKey).unwrap();
       toast.success(
         result.removedOrganizationSettings > 0
           ? `Deleted ${result.name} and cleared it from ${result.removedOrganizationSettings} organization${result.removedOrganizationSettings === 1 ? "" : "s"}.`
           : `Deleted ${result.name}.`,
       );
       dispatch(actions.setDialog(null));
-      await load();
     } catch (err) {
-      toast.error(getApiErrorMessage(err, FALLBACK_ERROR));
+      toast.error(queryErrorMessage(err, FALLBACK_ERROR));
     } finally {
       dispatch(actions.setSubmitting(false));
     }
-  }, [state.dialog, toast, load]);
+  }, [state.dialog, toast, deleteFeatureMutation]);
 
   const importDefaults = useCallback(async () => {
     dispatch(actions.setImporting(true));
     try {
-      const result = await importDefaultsApi();
+      const result = await importDefaultFeatures().unwrap();
       toast.success(
         result.imported > 0
           ? `Imported ${result.imported} built-in feature${result.imported === 1 ? "" : "s"}.`
           : "The catalog already has every built-in feature.",
       );
-      await load();
     } catch (err) {
-      toast.error(getApiErrorMessage(err, FALLBACK_ERROR));
+      toast.error(queryErrorMessage(err, FALLBACK_ERROR));
     } finally {
       dispatch(actions.setImporting(false));
     }
-  }, [toast, load]);
+  }, [toast, importDefaultFeatures]);
 
   const features = state.overview?.features;
 
@@ -194,11 +245,21 @@ export function FeatureFlagsProvider({
     );
   }, [features, state.category, state.search]);
 
+  const groupedFeatures = useMemo(() => {
+    const groups = new Map<string, FeatureFlag[]>();
+    for (const f of visibleFeatures) {
+      groups.set(f.category, [...(groups.get(f.category) ?? []), f]);
+    }
+    return [...groups.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([category, list]) => ({ category, features: list }));
+  }, [visibleFeatures]);
+
   const categoryOptions = useMemo(
     () =>
       [
         ...new Set([
-          DEFAULT_CATEGORY,
+          ...CATEGORY_SUGGESTIONS,
           ...(features ?? []).map((f) => f.category),
         ]),
       ].sort((a, b) => a.localeCompare(b)),
@@ -218,6 +279,7 @@ export function FeatureFlagsProvider({
     togglingKey: state.togglingKey,
     importing: state.importing,
     visibleFeatures,
+    groupedFeatures,
     categoryOptions,
     canManage,
     setCategory,
@@ -229,6 +291,7 @@ export function FeatureFlagsProvider({
     refresh,
     saveFeature,
     toggleDefault,
+    toggleGlobal,
     deleteFeature,
     importDefaults,
   };
@@ -240,7 +303,7 @@ export function FeatureFlagsProvider({
   );
 }
 
-export function useFeatureFlagsContext(): FeatureFlagsContextType {
+export const useFeatureFlagsContext = (): FeatureFlagsContextType => {
   const context = useContext(FeatureFlagsContext);
   if (!context) {
     throw new Error(
@@ -249,3 +312,5 @@ export function useFeatureFlagsContext(): FeatureFlagsContextType {
   }
   return context;
 }
+
+export * from "@/features/feature-flags/context/hooks";

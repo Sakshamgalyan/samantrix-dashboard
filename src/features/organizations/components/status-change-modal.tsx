@@ -1,12 +1,12 @@
 "use client";
 
 import { Button, Modal, Textarea } from "@galyan/ui";
-import { GLASS_ROW } from "@/components/admin";
-import { useOrganizationsContext } from "../context";
-import { STATUS_META } from "../common/constants";
+import { GLASS_ROW } from "@/components/layout/common/glass";
+import { useOrganizationsContext } from "@/features/organizations/context";
+import { STATUS_META } from "@/features/organizations/common/constants";
 
 /** Confirmation for suspending or re-activating an organization. */
-export function StatusChangeModal() {
+export const StatusChangeModal = () => {
   const { state, setStatusReason, closeStatusDialog, submitStatusChange } =
     useOrganizationsContext();
   const dialog = state.statusDialog;
@@ -14,7 +14,6 @@ export function StatusChangeModal() {
 
   return (
     <Modal
-      variant="glass"
       isOpen={dialog !== null}
       onClose={closeStatusDialog}
       size="sm"
@@ -27,10 +26,11 @@ export function StatusChangeModal() {
       }
       subtitle={dialog ? `Owner: ${dialog.org.owner.email}` : undefined}
       footer={
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 w-full">
           <Button
-            variant="glass"
+            variant="secondary"
             size="sm"
+            className="w-full sm:w-auto"
             onClick={closeStatusDialog}
             disabled={dialog?.submitting}
           >
@@ -39,6 +39,7 @@ export function StatusChangeModal() {
           <Button
             variant={suspending ? "danger" : "primary"}
             size="sm"
+            className="w-full sm:w-auto"
             isLoading={dialog?.submitting}
             onClick={() => void submitStatusChange()}
           >

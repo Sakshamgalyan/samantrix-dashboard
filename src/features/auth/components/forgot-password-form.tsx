@@ -2,7 +2,7 @@
 
 import { useEffect, useReducer } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/lib/form-resolver";
 import { Banner, Button, Input, Typography } from "@galyan/ui";
 import {
   ArrowLeft,
@@ -16,13 +16,13 @@ import {
   MailCheck,
   RotateCw,
 } from "lucide-react";
-import { useAuthPageContext } from "../context";
+import { useAuthPageContext } from "@/features/auth/context";
 import {
   getApiErrorMessage,
   requestPasswordResetApi,
   resetPasswordApi,
   verifyResetCodeApi,
-} from "../context/api";
+} from "@/features/auth/context/api";
 import {
   forgotEmailSchema,
   newPasswordSchema,
@@ -30,8 +30,8 @@ import {
   type ForgotEmailFormValues,
   type NewPasswordFormValues,
   type ResetCodeFormValues,
-} from "../types";
-import { AUTOFILL_FIX } from "../common/styles";
+} from "@/features/auth/types/forms";
+import { AUTOFILL_FIX } from "@/features/auth/common/styles";
 
 type Step = "email" | "code" | "password" | "done";
 
@@ -104,7 +104,7 @@ function reducer(state: FlowState, action: FlowAction): FlowState {
   }
 }
 
-function StepHeading({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: React.ReactNode }) {
+const StepHeading = ({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle: React.ReactNode }) => {
   return (
     <div className="space-y-3">
       <span className="grid size-11 place-items-center rounded-xl bg-[var(--gy-primary)]/10 text-[var(--gy-primary)]">
@@ -120,13 +120,13 @@ function StepHeading({ icon, title, subtitle }: { icon: React.ReactNode; title: 
       </div>
     </div>
   );
-}
+};
 
 /**
  * Forgot password: email → 6-digit code from the email → new password.
  * A successful reset signs the account out on every device.
  */
-export function ForgotPasswordForm() {
+export const ForgotPasswordForm = () => {
   const { resetToLogin } = useAuthPageContext();
   const [state, dispatch] = useReducer(reducer, initialState);
 
@@ -364,4 +364,4 @@ export function ForgotPasswordForm() {
       <div className="flex justify-center">{backToSignIn}</div>
     </form>
   );
-}
+};

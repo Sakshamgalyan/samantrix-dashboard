@@ -1,36 +1,65 @@
-import type React from "react";
-import { api, ApiError } from "@/lib/api";
-import type { DevelopersAction, DevelopersResponse } from "../types";
-import { loadFailure, loadSuccess } from "./action";
+import type { Paginated, PageQueryParams } from "@/features/common/pagination";
+import { dashboardApi } from "@/store";
+import type {
+  DeveloperAccount,
+  DevelopersSummary,
+  UpdateDeveloperRequest,
+} from "@/features/developers/types";
 
-/** Loads every developer account (with status counts) into context. */
-export async function loadDevelopersApi(
-  dispatch: React.Dispatch<DevelopersAction>,
-): Promise<void> {
-  try {
-    dispatch(
-      loadSuccess(await api.get<DevelopersResponse>("/auth/developers")),
-    );
-  } catch (err) {
-    dispatch(
-      loadFailure(
-        err instanceof ApiError
-          ? err.message
-          : "Couldn't load developer accounts.",
-      ),
-    );
-  }
-}
+/**
+ * Developer accounts. The counts come from `/auth/developers/summary` (shared by the sidebar
+ * badge, the overview and the KPI cards); the table and the approval queue read pages of
+ * `/auth/developers`, filtered on the server.
+ */
+export const developersApi = dashboardApi.injectEndpoints({
+  endpoints: (build) => ({
+    /** Status counts and how many developers are online. */
+    getDevelopersSummary: build.query<DevelopersSummary, void>({
+      query: () => "/users/developers/summary",
+      providesTags: ["Developers"],
+    }),
 
-/** Approve, reinstate or change role (the backend uses one endpoint for all three). */
-export async function approveDeveloperApi(
-  id: string,
-  platformRole: string,
-): Promise<void> {
-  await api.patch(`/auth/developers/${id}/approve`, { platformRole });
-}
+    /** One page of developer accounts (`pageParams(page, { status, role, search })`). */
+    getDevelopers: build.query<Paginated<DeveloperAccount>, PageQueryParams>({
+      query: (params) => ({ url: "/users/developers", params }),
+      providesTags: ["Developers"],
+    }),
 
-/** Reject a pending request or revoke an active developer (signs them out everywhere). */
-export async function rejectDeveloperApi(id: string): Promise<void> {
-  await api.patch(`/auth/developers/${id}/reject`);
-}
+    /** Approve a pending request or reinstate a rejected developer with a role. */
+    approveDeveloper: build.mutation<void, { id: string; platformRole: string }>({
+      query: ({ id, platformRole }) => ({
+        url: `/users/developers/${id}/approve`,
+        method: "PATCH",
+        body: { platformRole },
+      }),
+      invalidatesTags: ["Developers"],
+    }),
+
+    /** Reject a pending request (the developer is emailed). */
+    rejectDeveloper: build.mutation<void, string>({
+      query: (id) => ({ url: `/users/developers/${id}/reject`, method: "PATCH" }),
+      invalidatesTags: ["Developers"],
+    }),
+
+    /** Edit name / phone / role / status; a role change or suspension signs them out. */
+    updateDeveloper: build.mutation<void, { id: string; body: UpdateDeveloperRequest }>({
+      query: ({ id, body }) => ({ url: `/users/developers/${id}`, method: "PATCH", body }),
+      invalidatesTags: ["Developers"],
+    }),
+
+    /** Signs the developer out everywhere and deletes the account. */
+    deleteDeveloper: build.mutation<void, string>({
+      query: (id) => ({ url: `/users/developers/${id}`, method: "DELETE" }),
+      invalidatesTags: ["Developers"],
+    }),
+  }),
+});
+
+export const {
+  useGetDevelopersSummaryQuery,
+  useGetDevelopersQuery,
+  useApproveDeveloperMutation,
+  useRejectDeveloperMutation,
+  useUpdateDeveloperMutation,
+  useDeleteDeveloperMutation,
+} = developersApi;

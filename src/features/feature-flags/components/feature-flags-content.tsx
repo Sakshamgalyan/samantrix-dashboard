@@ -1,26 +1,35 @@
 "use client";
 
 import React from "react";
+import dynamic from "next/dynamic";
 import { Banner, Button, Chip } from "@galyan/ui";
 import { DownloadCloud, Plus } from "lucide-react";
-import {
-  AdminHero,
-  AdminLoadError,
-  AdminPageSkeleton,
-  StaleDataBanner,
-} from "@/components/admin";
-import { formatNumber } from "@/lib/format";
-import { useFeatureFlagsContext } from "../context";
-import { FeatureKpis } from "./feature-kpis";
-import { FeatureTable } from "./feature-table";
-import { FeatureFormModal } from "./feature-form-modal";
-import { DeleteFeatureModal } from "./delete-feature-modal";
+import { AdminHero } from "@/components/layout/common/hero";
+import { AdminLoadError, AdminPageSkeleton } from "@/components/layout/common/states";
+import { useFeatureFlagsContext } from "@/features/feature-flags/context";
+import { FeatureKpis } from "@/features/feature-flags/components/feature-kpis";
+import { FeatureCatalog } from "@/features/feature-flags/components/feature-catalog";
 
-export function FeatureFlagsContent() {
+const FeatureFormModal = dynamic(
+  () =>
+    import("@/features/feature-flags/components/feature-form-modal").then(
+      (m) => m.FeatureFormModal,
+    ),
+  { ssr: false },
+);
+
+const DeleteFeatureModal = dynamic(
+  () =>
+    import("@/features/feature-flags/components/delete-feature-modal").then(
+      (m) => m.DeleteFeatureModal,
+    ),
+  { ssr: false },
+);
+
+export const FeatureFlagsContent = () => {
   const {
     overview,
     loadError,
-    refreshing,
     refresh,
     canManage,
     openCreate,
@@ -45,38 +54,28 @@ export function FeatureFlagsContent() {
   const orphans = summary.orphanKeys;
 
   return (
-    <div className="space-y-6">
-      {loadError && <StaleDataBanner error={loadError} />}
-
+    <div className="space-y-4">
       <AdminHero
         title="Feature flags"
-        description="The platform-wide feature catalog: what each feature is called, which plan unlocks it, whether new organizations get it switched on, and how many organizations actually use it."
+        description="What Simantrix sells: each feature, the plan that unlocks it, add-on pricing, and whether it is live for organizations."
         chips={
-          <>
-            <Chip variant="soft" size="sm">
-              Platform catalog
+          !canManage && (
+            <Chip variant="warning" size="sm">
+              Read-only
             </Chip>
-            <Chip variant="neutral" size="sm">
-              {formatNumber(summary.totalOrganizations)} live organization
-              {summary.totalOrganizations === 1 ? "" : "s"}
-            </Chip>
-            {!canManage && (
-              <Chip variant="warning" size="sm">
-                Read-only
-              </Chip>
-            )}
-          </>
+          )
         }
         actions={
           canManage && (
-            <>
+            <div className="flex flex-wrap items-center gap-2">
               {missing > 0 && summary.totalFeatures > 0 && (
                 <Button
-                  variant="glass"
+                  variant="secondary"
                   size="sm"
                   isLoading={importing}
                   leftIcon={<DownloadCloud className="size-3.5" />}
                   onClick={importDefaults}
+                  className="w-full sm:w-auto"
                 >
                   Import {missing} built-in
                 </Button>
@@ -86,14 +85,13 @@ export function FeatureFlagsContent() {
                 size="sm"
                 leftIcon={<Plus className="size-3.5" />}
                 onClick={openCreate}
+                className="w-full sm:w-auto"
               >
                 Add feature
               </Button>
-            </>
+            </div>
           )
         }
-        onRefresh={refresh}
-        refreshing={refreshing}
         updatedAt={overview.generatedAt}
       />
 
@@ -104,20 +102,18 @@ export function FeatureFlagsContent() {
           variant="info"
           size="sm"
           bannerStyle="subtle"
-          title={`${orphans.length} feature key${orphans.length === 1 ? " is" : "s are"} stored on organizations but not in the catalog`}
+          title={`${orphans.length} feature key${orphans.length === 1 ? " is" : "s are"} used by organizations but missing from the catalog`}
           description={`${orphans
             .slice(0, 6)
             .map((o) => `${o.featureKey} (${o.organizations})`)
-            .join(
-              ", ",
-            )}${orphans.length > 6 ? ", …" : ""}. Add ${orphans.length === 1 ? "it" : "them"} to the catalog to manage ${orphans.length === 1 ? "it" : "them"} here.`}
+            .join(", ")}${orphans.length > 6 ? ", …" : ""}. Add ${orphans.length === 1 ? "it" : "them"} to manage ${orphans.length === 1 ? "it" : "them"} here.`}
         />
       )}
 
-      <FeatureTable />
+      <FeatureCatalog />
 
       <FeatureFormModal />
       <DeleteFeatureModal />
     </div>
   );
-}
+};

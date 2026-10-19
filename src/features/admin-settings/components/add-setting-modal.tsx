@@ -1,18 +1,15 @@
 "use client";
 
 import { useEffect } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Dropdown, Input, Modal, Textarea, Toggle } from "@galyan/ui";
+import { Controller, useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@/lib/form-resolver";
+import { Button, Dropdown, Input, Modal, Textarea, Toggle, Typography } from "@galyan/ui";
 import { Plus } from "lucide-react";
-import { GLASS_ROW } from "@/components/admin";
-import { useSettingsContext } from "../context";
-import {
-  addSettingSchema,
-  type AddSettingFormValues,
-  type SettingCategory,
-} from "../types";
-import { CATEGORY_OPTIONS } from "../common/constants";
+import { GLASS_ROW } from "@/components/layout/common/glass";
+import { useSettingsContext } from "@/features/admin-settings/context";
+import { addSettingSchema, type AddSettingFormValues } from "@/features/admin-settings/types/forms";
+import type { SettingCategory } from "@/features/admin-settings/types/api";
+import { CATEGORY_OPTIONS } from "@/features/admin-settings/common/constants";
 
 const EMPTY: AddSettingFormValues = {
   key: "",
@@ -23,14 +20,13 @@ const EMPTY: AddSettingFormValues = {
 };
 
 /** Glass dialog for adding a custom (free-text, optionally secret) setting. */
-export function AddSettingModal() {
+export const AddSettingModal = () => {
   const { state, closeAdd, createSetting } = useSettingsContext();
   const {
     register,
     control,
     handleSubmit,
     reset,
-    watch,
     formState: { errors },
   } = useForm<AddSettingFormValues>({
     resolver: zodResolver(addSettingSchema),
@@ -50,22 +46,21 @@ export function AddSettingModal() {
     }
   }, [state.addOpen, state.activeTab, reset]);
 
-  const isSecret = watch("isSecret");
+  const isSecret = useWatch({ control, name: "isSecret" });
   const submit = handleSubmit(async (values) => {
     await createSetting(values);
   });
 
   return (
     <Modal
-      variant="glass"
       isOpen={state.addOpen}
       onClose={() => !state.creating && closeAdd()}
       size="md"
       icon={<Plus className="size-5" />}
       title="Add a custom setting"
-      subtitle="Built-in settings are already listed; use this for anything else the platform needs."
+      subtitle="Built-in settings are already listed; use this for any other configuration you need."
       footer={
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
           <Button
             variant="secondary"
             size="sm"
@@ -111,7 +106,6 @@ export function AddSettingModal() {
           render={({ field }) => (
             <Dropdown
               label="Category"
-              variant="glass"
               options={CATEGORY_OPTIONS}
               value={field.value}
               onChange={(v) => field.onChange(v as SettingCategory)}
@@ -126,12 +120,12 @@ export function AddSettingModal() {
               className={`${GLASS_ROW} flex items-center justify-between gap-4 px-3 py-2.5`}
             >
               <div>
-                <p className="text-sm font-medium text-[var(--gy-text)]">
+                <Typography variant="p" className="text-sm font-medium text-[var(--gy-text)]">
                   Secret value
-                </p>
-                <p className="text-xs text-[var(--gy-text-secondary)]">
+                </Typography>
+                <Typography variant="p" className="text-xs text-[var(--gy-text-secondary)]">
                   Write-only: it can be replaced but never shown again.
-                </p>
+                </Typography>
               </div>
               <Toggle
                 checked={field.value}
@@ -161,4 +155,4 @@ export function AddSettingModal() {
       </form>
     </Modal>
   );
-}
+};

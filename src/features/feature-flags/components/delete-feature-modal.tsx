@@ -3,10 +3,10 @@
 import React from "react";
 import { Button, Modal } from "@galyan/ui";
 import { Trash2 } from "lucide-react";
-import { GLASS_ROW } from "@/components/admin";
-import { useFeatureFlagsContext } from "../context";
+import { GLASS_ROW } from "@/components/layout/common/glass";
+import { useFeatureFlagsContext } from "@/features/feature-flags/context";
 
-export function DeleteFeatureModal() {
+export const DeleteFeatureModal = () => {
   const { dialog, submitting, closeDialog, deleteFeature } =
     useFeatureFlagsContext();
   const feature = dialog?.kind === "delete" ? dialog.feature : null;
@@ -14,7 +14,6 @@ export function DeleteFeatureModal() {
 
   return (
     <Modal
-      variant="glass"
       size="sm"
       isOpen={feature !== null}
       onClose={closeDialog}
@@ -24,7 +23,7 @@ export function DeleteFeatureModal() {
       footer={
         <div className="flex justify-end gap-2">
           <Button
-            variant="glass"
+            variant="secondary"
             size="sm"
             onClick={closeDialog}
             disabled={submitting}
@@ -60,4 +59,4 @@ export function DeleteFeatureModal() {
       )}
     </Modal>
   );
-}
+};

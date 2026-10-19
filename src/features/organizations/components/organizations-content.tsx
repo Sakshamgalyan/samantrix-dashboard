@@ -1,27 +1,62 @@
 "use client";
 
-import { Chip } from "@galyan/ui";
-import {
-  AdminHero,
-  AdminLoadError,
-  AdminPageSkeleton,
-  StaleDataBanner,
-  useAutoRefresh,
-} from "@/components/admin";
-import { useOrganizationsContext } from "../context";
-import { PLAN_META, PLAN_ORDER } from "../common/constants";
-import { OrganizationsKpis } from "./organizations-kpis";
-import { OrganizationsTable } from "./organizations-table";
-import { OrganizationDetailModal } from "./organization-detail-modal";
-import { StatusChangeModal } from "./status-change-modal";
+import dynamic from "next/dynamic";
+import { Button, Chip } from "@galyan/ui";
+import { Plus } from "lucide-react";
+import { AdminHero } from "@/components/layout/common/hero";
+import { AdminLoadError, AdminPageSkeleton } from "@/components/layout/common/states";
+import { useOrganizationsContext } from "@/features/organizations/context";
+import { PLAN_META, PLAN_ORDER } from "@/features/organizations/common/constants";
+import { OrganizationsKpis } from "@/features/organizations/components/organizations-kpis";
+import { OrganizationsTable } from "@/features/organizations/components/organizations-table";
 
-export function OrganizationsContent() {
-  const { state, load, refresh, canManage } = useOrganizationsContext();
-  useAutoRefresh(load);
+const OrganizationDetailModal = dynamic(
+  () =>
+    import("@/features/organizations/components/organization-detail-modal").then(
+      (m) => m.OrganizationDetailModal,
+    ),
+  { ssr: false },
+);
 
-  const { data, error } = state;
+const StatusChangeModal = dynamic(
+  () =>
+    import("@/features/organizations/components/status-change-modal").then(
+      (m) => m.StatusChangeModal,
+    ),
+  { ssr: false },
+);
 
-  if (!data) {
+const OrganizationFormModal = dynamic(
+  () =>
+    import("@/features/organizations/components/organization-form-modal").then(
+      (m) => m.OrganizationFormModal,
+    ),
+  { ssr: false },
+);
+
+const SubscriptionModal = dynamic(
+  () =>
+    import("@/features/organizations/components/subscription-modal").then(
+      (m) => m.SubscriptionModal,
+    ),
+  { ssr: false },
+);
+
+const DeleteOrganizationModal = dynamic(
+  () =>
+    import("@/features/organizations/components/delete-organization-modal").then(
+      (m) => m.DeleteOrganizationModal,
+    ),
+  { ssr: false },
+);
+
+export const OrganizationsContent = () => {
+  // The list refreshes itself every minute (polling lives in the context)
+  const { state, refresh, canManage, openCreate } = useOrganizationsContext();
+
+  const { summary, error } = state;
+
+  if (!summary) {
     return error ? (
       <AdminLoadError
         title="Organizations unavailable"
@@ -33,34 +68,36 @@ export function OrganizationsContent() {
     );
   }
 
-  const plans = PLAN_ORDER.filter((p) => data.counts.byPlan[p] > 0);
+  const plans = PLAN_ORDER.filter((p) => summary.counts.byPlan[p] > 0);
 
   return (
-    <div className="space-y-6">
-      {error && <StaleDataBanner error={error} />}
-
+    <div className="space-y-4">
       <AdminHero
         title="Organizations"
         description={
           canManage
-            ? "Every tenant on the platform with its owner, plan, subscription and seats. Open an organization to see its members and invoices, or suspend and re-activate it."
-            : "Every tenant on the platform with its owner, plan, subscription and seats. Open an organization to see its members and invoices."
+            ? "Create and edit customer organizations, assign subscriptions and seats, and change their status."
+            : "Customer organizations with their owner, plan, seats and status."
         }
-        chips={
-          <>
-            <Chip variant="soft" size="sm">
-              Tenant governance
-            </Chip>
-            {plans.map((p) => (
-              <Chip key={p} variant="outline" size="sm">
-                {PLAN_META[p].label} · {data.counts.byPlan[p]}
-              </Chip>
-            ))}
-          </>
+        chips={plans.map((p) => (
+          <Chip key={p} variant="outline" size="sm">
+            {PLAN_META[p].label} · {summary.counts.byPlan[p]}
+          </Chip>
+        ))}
+        actions={
+          canManage ? (
+            <Button
+              variant="primary"
+              size="sm"
+              className="w-full sm:w-auto"
+              leftIcon={<Plus className="size-3.5" />}
+              onClick={openCreate}
+            >
+              New organization
+            </Button>
+          ) : undefined
         }
-        onRefresh={refresh}
-        refreshing={state.refreshing}
-        updatedAt={data.generatedAt}
+        updatedAt={summary.generatedAt}
       />
 
       <OrganizationsKpis />
@@ -68,6 +105,10 @@ export function OrganizationsContent() {
 
       <OrganizationDetailModal />
       <StatusChangeModal />
+      <OrganizationFormModal />
+      <SubscriptionModal />
+      <DeleteOrganizationModal />
     </div>
   );
-}
+};
+

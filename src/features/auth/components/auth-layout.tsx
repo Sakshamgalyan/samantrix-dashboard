@@ -1,16 +1,16 @@
 "use client";
 
 import React from "react";
-import { AuthHeader } from "./auth-header";
-import { AuthFooter } from "./auth-footer";
+import { AuthHeader } from "@/features/auth/components/auth-header";
+import { AuthFooter } from "@/features/auth/components/auth-footer";
 
 export interface AuthLayoutProps {
   children: React.ReactNode;
 }
 
-export function AuthLayout({ children }: AuthLayoutProps) {
+export const AuthLayout = ({ children }: AuthLayoutProps) => {
   return (
-    <div className="min-h-dvh w-full flex flex-col relative overflow-x-hidden antialiased bg-[var(--gy-background)] text-[var(--gy-text)] transition-colors duration-500">
+    <div className="h-dvh max-h-dvh w-full flex flex-col justify-between relative overflow-hidden antialiased bg-[var(--gy-background)] text-[var(--gy-text)] transition-colors duration-500">
       {/* Ambient backdrop — all colours come from Galyan tokens, so it follows the colour mode */}
       <div aria-hidden className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
         <div className="absolute inset-0 bg-[radial-gradient(var(--gy-border-strong)_1px,transparent_1px)] [background-size:28px_28px] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_45%,black,transparent)] opacity-60" />
@@ -24,12 +24,12 @@ export function AuthLayout({ children }: AuthLayoutProps) {
 
       <AuthHeader />
 
-      {/* Sized to fit a laptop viewport; falls back to page scroll only on very short screens */}
-      <main className="relative z-10 flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-10 py-3 lg:py-4 flex items-center justify-center">
+      {/* Sized to fit a laptop viewport without any page scroll */}
+      <main className="relative z-10 flex-1 min-h-0 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-1 sm:py-2 flex items-center justify-center overflow-y-auto">
         {children}
       </main>
 
       <AuthFooter />
     </div>
   );
-}
+};

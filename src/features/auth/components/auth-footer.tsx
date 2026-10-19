@@ -6,20 +6,20 @@ import { Card, Typography } from "@galyan/ui";
 const FOOTER_LINKS = [
   {
     label: "Status",
-    message: "Samantrix Security Status: Operational. Zero-Trust perimeter active.",
+    message: "Simantrix Security Status: Operational. Zero-Trust perimeter active.",
   },
-  { label: "Terms", message: "Samantrix Master Services Agreement & Terms." },
-  { label: "Privacy", message: "Samantrix Data Processing & Privacy Policy." },
-  { label: "Support", message: "Contact Support: enterprise-support@samantrix.io" },
+  { label: "Terms", message: "Simantrix Master Services Agreement & Terms." },
+  { label: "Privacy", message: "Simantrix Data Processing & Privacy Policy." },
+  { label: "Support", message: "Contact Support: enterprise-support@Simantrix.io" },
 ];
 
-export function AuthFooter() {
+export const AuthFooter = () => {
   return (
-    <footer className="relative z-30 shrink-0 w-full px-3 pb-3 sm:px-5">
+    <footer className="relative z-30 shrink-0 w-full px-3 pb-2 sm:px-5 sm:pb-2.5">
       <Card variant="glass" padding="none" radius="xl" className="w-full">
-        <div className="flex h-11 w-full items-center justify-between gap-4 px-4 sm:px-5">
+        <div className="flex h-9 sm:h-10 w-full items-center justify-between gap-4 px-4 sm:px-5">
       <Typography variant="small" className="text-[11px] text-[var(--gy-text-subtle)]">
-        © {new Date().getFullYear()} Samantrix Inc.
+        © {new Date().getFullYear()} Simantrix Inc.
       </Typography>
 
       <nav className="flex items-center gap-4">
@@ -40,4 +40,4 @@ export function AuthFooter() {
       </Card>
     </footer>
   );
-}
+};

@@ -36,43 +36,43 @@ const STATS = [
   { value: 256, suffix: "-bit", label: "Encryption" },
 ];
 
-export function AuthShowcase() {
+export const AuthShowcase = () => {
   return (
-    <section className="hidden lg:flex lg:col-span-7 flex-col justify-center gap-6 max-w-2xl transition-all duration-700 ease-out starting:opacity-0 starting:-translate-x-6">
+    <section className="hidden lg:flex lg:col-span-6 flex-col justify-center gap-3.5 xl:gap-5 max-w-2xl transition-all duration-700 ease-out starting:opacity-0 starting:-translate-x-6">
       <div>
         <Chip variant="soft" size="sm" icon={<Sparkles className="size-3" />}>
           Enterprise Identity Fabric
         </Chip>
       </div>
 
-      <div className="space-y-4">
+      <div className="space-y-2 sm:space-y-3">
         <Typography
           variant="h1"
           weight="extrabold"
-          className="text-4xl xl:text-[2.85rem] tracking-tight leading-[1.08] text-[var(--gy-text)]"
+          className="text-2xl lg:text-3xl xl:text-4xl 2xl:text-[2.65rem] tracking-tight leading-[1.1] text-[var(--gy-text)]"
         >
           Autonomous virtual workplaces,{" "}
           <span className="bg-linear-to-r from-[var(--gy-primary)] via-[var(--gy-secondary)] to-[var(--gy-info)] bg-clip-text text-transparent">
             instant zero-trust identity.
           </span>
         </Typography>
-        <Typography variant="p" className="text-base leading-relaxed max-w-xl text-[var(--gy-text-secondary)]">
+        <Typography variant="p" className="text-xs lg:text-sm xl:text-base leading-relaxed max-w-xl text-[var(--gy-text-secondary)]">
           Connect distributed engineering pods, AI runtime agents, and hardware modules behind
           deterministic cryptographic access policies.
         </Typography>
       </div>
 
-      {/* Live stats */}
-      <Card variant="glass" padding="none" radius="xl" className="[@media(max-height:720px)]:hidden">
+      {/* Live stats - visible only on tall displays */}
+      <Card variant="glass" padding="none" radius="xl" className="[@media(max-height:780px)]:hidden">
         <div className="grid grid-cols-3 divide-x divide-[var(--gy-divider)]">
           {STATS.map((stat) => (
-            <div key={stat.label} className="px-5 py-3.5">
+            <div key={stat.label} className="px-4 py-2.5">
               <AnimatedNumber
                 value={stat.value}
                 decimals={stat.decimals}
                 prefix={stat.prefix}
                 suffix={stat.suffix}
-                variant="h3"
+                variant="h4"
                 weight="bold"
                 mode="roller"
                 easing="easeOutExpo"
@@ -80,7 +80,7 @@ export function AuthShowcase() {
                 animateOnMount
                 className="tracking-tight text-[var(--gy-text)]"
               />
-              <Typography variant="span" className="mt-1 block text-xs uppercase tracking-wider text-[var(--gy-text-subtle)]">
+              <Typography variant="span" className="mt-0.5 block text-[11px] uppercase tracking-wider text-[var(--gy-text-subtle)]">
                 {stat.label}
               </Typography>
             </div>
@@ -88,28 +88,28 @@ export function AuthShowcase() {
         </div>
       </Card>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-2.5">
         {CAPABILITIES.map(({ icon: Icon, tone, title, description }, idx) => (
           <Card
             key={title}
             variant="glass"
-            padding="sm"
+            padding="xs"
             radius="lg"
             hoverEffect="glow"
             className="group transition-all duration-500 ease-out hover:-translate-y-0.5 starting:opacity-0 starting:translate-y-3"
             style={{ transitionDelay: `${150 + idx * 80}ms` }}
           >
-            <div className="flex items-start gap-3">
+            <div className="flex items-start gap-2.5 p-1.5 sm:p-2">
               <span
-                className={`grid size-9 shrink-0 place-items-center rounded-lg ring-1 transition-transform duration-300 group-hover:scale-110 ${tone}`}
+                className={`grid size-8 shrink-0 place-items-center rounded-lg ring-1 transition-transform duration-300 group-hover:scale-110 ${tone}`}
               >
-                <Icon className="size-4" />
+                <Icon className="size-3.5" />
               </span>
               <div className="min-w-0 space-y-0.5">
-                <Typography variant="span" weight="semibold" className="block text-sm text-[var(--gy-text)]">
+                <Typography variant="span" weight="semibold" className="block text-xs sm:text-sm text-[var(--gy-text)]">
                   {title}
                 </Typography>
-                <Typography variant="span" className="block text-xs leading-snug text-[var(--gy-text-secondary)]">
+                <Typography variant="span" className="block text-[11px] leading-snug text-[var(--gy-text-secondary)] line-clamp-2">
                   {description}
                 </Typography>
               </div>
@@ -119,4 +119,4 @@ export function AuthShowcase() {
       </div>
     </section>
   );
-}
+};

@@ -1,9 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useAuth } from "../context/auth-context";
-import { CONSOLE_HOME } from "@/lib/home-path";
-import { useAuthPageContext } from "../context";
+import { useAuth } from "@/features/auth/context/auth-context";
+import { CONSOLE_HOME } from "@/utils/home-path";
+import { useAuthPageContext } from "@/features/auth/context";
 import {
   Card,
   CardHeader,
@@ -22,7 +22,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 
-export function BackupCodesCard() {
+export const BackupCodesCard = () => {
   const router = useRouter();
   const { refreshSession } = useAuth();
   const {
@@ -44,7 +44,7 @@ export function BackupCodesCard() {
   };
 
   const downloadTxt = () => {
-    const content = `SAMANTRIX ENTERPRISE — 2FA EMERGENCY BACKUP CODES\nGenerated: ${new Date().toISOString()}\n\nKeep these codes in a secure password vault (e.g. 1Password / Bitwarden).\nEach code can only be used once.\n\n${backupCodes
+    const content = `Simantrix ENTERPRISE — 2FA EMERGENCY BACKUP CODES\nGenerated: ${new Date().toISOString()}\n\nKeep these codes in a secure password vault (e.g. 1Password / Bitwarden).\nEach code can only be used once.\n\n${backupCodes
       .map((c, i) => `${i + 1}. ${c}`)
       .join("\n")}\n`;
 
@@ -52,7 +52,7 @@ export function BackupCodesCard() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = `samantrix-backup-codes-${Date.now()}.txt`;
+    link.download = `Simantrix-backup-codes-${Date.now()}.txt`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -152,4 +152,4 @@ export function BackupCodesCard() {
       </CardFooter>
     </Card>
   );
-}
+};

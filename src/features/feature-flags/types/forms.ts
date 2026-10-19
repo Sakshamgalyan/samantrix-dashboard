@@ -24,6 +24,16 @@ export const featureFormSchema = z
     newCategory: z.string().trim(),
     minPlanTier: z.enum(["FREE", "STARTER", "PROFESSIONAL", "ENTERPRISE"]),
     defaultEnabled: z.boolean(),
+    isEnabled: z.boolean(),
+    isBeta: z.boolean(),
+    /** Optional INR / month; empty means "included in the plan" */
+    addonPrice: z
+      .string()
+      .trim()
+      .refine(
+        (v) => v === "" || (/^\d+(\.\d{1,2})?$/.test(v) && Number(v) <= 10_000_000),
+        "Enter an amount like 499 or 499.50",
+      ),
   })
   .superRefine((values, ctx) => {
     if (

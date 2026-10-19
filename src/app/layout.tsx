@@ -4,7 +4,7 @@ import "@galyan/theme/css/variables";
 import "@galyan/ui/styles.css";
 import "./globals.css";
 import { AppProviders } from "./providers";
-import { LIGHT_THEME_ATTR, themeGuardScript } from "@/lib/theme-guard";
+import { LIGHT_THEME_ATTR, themeGuardScript } from "@/utils/theme-guard";
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -21,9 +21,9 @@ const unbounded = Unbounded({
 });
 
 export const metadata: Metadata = {
-  title: "Samantrix Operations & Ecosystem Console",
+  title: "Simantrix Operations & Ecosystem Console",
   description:
-    "Internal command center for Samantrix: visitor telemetry, CRM leads, Early 2027 waitlist, and multi-app orchestration.",
+    "Internal command center for Simantrix: visitor telemetry, CRM leads, Early 2027 waitlist, and multi-app orchestration.",
 };
 
 export default function RootLayout({
@@ -34,7 +34,8 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      data-brand="samantrix"
+      data-brand="simantrix"
+      data-role="simantrix"
       data-theme={LIGHT_THEME_ATTR}
       data-color-mode="light"
       style={{ colorScheme: "light" }}

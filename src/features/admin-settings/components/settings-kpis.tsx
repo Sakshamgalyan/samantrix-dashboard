@@ -1,14 +1,14 @@
 "use client";
 
 import { Clock, Database, KeyRound, Layers } from "lucide-react";
-import { KpiCard } from "@/components/admin";
-import { formatDateTime, relativeTime } from "@/lib/format";
-import type { PlatformSettingsSummary } from "../types";
+import { KpiCard } from "@/components/layout/common/kpi-card";
+import { formatDateTime, relativeTime } from "@/utils/format";
+import type { PlatformSettingsSummary } from "@/features/admin-settings/types/api";
 
 /** KPI row: stored settings, defaults in use, secrets held, last change. */
-export function SettingsKpis({ summary }: { summary: PlatformSettingsSummary }) {
+export const SettingsKpis = ({ summary }: { summary: PlatformSettingsSummary }) => {
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard
         label="Settings configured"
         value={summary.configured}

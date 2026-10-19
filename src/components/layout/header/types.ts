@@ -15,4 +15,6 @@ export interface HeaderProps {
   badgeColor?: "primary" | "danger" | "success" | "warning" | "neutral";
   /** Extra controls rendered before notifications. */
   actions?: React.ReactNode;
+  /** Optional extra classes for the header container. */
+  className?: string;
 }

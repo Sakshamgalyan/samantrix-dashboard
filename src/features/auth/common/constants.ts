@@ -1,5 +1,5 @@
 import type { DropdownOption, Step } from "@galyan/ui";
-import type { OrgFormData } from "../types";
+import type { OrgFormData } from "@/features/auth/types/forms";
 
 export const INITIAL_ORG_FORM: OrgFormData = {
   organizationName: "",

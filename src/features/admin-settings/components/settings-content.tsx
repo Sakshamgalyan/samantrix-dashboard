@@ -1,24 +1,41 @@
 "use client";
 
-import { Banner, Button, Chip, Tabs } from "@galyan/ui";
+import dynamic from "next/dynamic";
+import { Button, Chip, Tabs, Typography } from "@galyan/ui";
 import { Eye, Plus, ShieldCheck } from "lucide-react";
-import {
-  AdminHero,
-  AdminLoadError,
-  AdminPageSkeleton,
-  StaleDataBanner,
-} from "@/components/admin";
-import { useSettingsContext } from "../context";
-import type { CategoryTab } from "../types";
-import { CATEGORY_META } from "../common/constants";
-import { SettingsKpis } from "./settings-kpis";
-import { SettingsCategorySection } from "./settings-category-section";
-import { AddSettingModal } from "./add-setting-modal";
-import { EditSettingModal } from "./edit-setting-modal";
-import { DeleteSettingModal } from "./delete-setting-modal";
+import { AdminLoadError, AdminPageSkeleton } from "@/components/layout/common/states";
+import { useSettingsContext } from "@/features/admin-settings/context";
+import type { CategoryTab } from "@/features/admin-settings/types/state";
+import { CATEGORY_META } from "@/features/admin-settings/common/constants";
+import { SettingsKpis } from "@/features/admin-settings/components/settings-kpis";
+import { SettingsCategorySection } from "@/features/admin-settings/components/settings-category-section";
 
-/** Platform Settings page: hero, KPIs, category tabs, one glass section per category, dialogs. */
-export function SettingsContent() {
+const AddSettingModal = dynamic(
+  () =>
+    import("@/features/admin-settings/components/add-setting-modal").then(
+      (m) => m.AddSettingModal
+    ),
+  { ssr: false }
+);
+
+const EditSettingModal = dynamic(
+  () =>
+    import("@/features/admin-settings/components/edit-setting-modal").then(
+      (m) => m.EditSettingModal
+    ),
+  { ssr: false }
+);
+
+const DeleteSettingModal = dynamic(
+  () =>
+    import("@/features/admin-settings/components/delete-setting-modal").then(
+      (m) => m.DeleteSettingModal
+    ),
+  { ssr: false }
+);
+
+/** Configuration tab: KPIs, category tabs, one section per category, dialogs (superadmins only). */
+export const SettingsContent = () => {
   const { state, canEdit, load, setActiveTab, openAdd } = useSettingsContext();
   const { data } = state;
 
@@ -26,8 +43,8 @@ export function SettingsContent() {
   if (!data) {
     return (
       <AdminLoadError
-        title="Platform settings unavailable"
-        message={state.loadError ?? "Could not load platform settings."}
+        title="Configuration unavailable"
+        message={state.loadError ?? "Could not load the configuration."}
         onRetry={() => void load()}
       />
     );
@@ -48,12 +65,13 @@ export function SettingsContent() {
       : data.categories.filter((c) => c.category === state.activeTab);
 
   return (
-    <div className="space-y-6">
-      <AdminHero
-        title="Platform Settings"
-        description="Platform-wide configuration that applies to every organization. Built-in settings show their default until you change them; secret values are write-only."
-        chips={
-          canEdit ? (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Typography variant="span" className="text-xs text-[var(--gy-text-secondary)]">
+          {total} configuration {total === 1 ? "key" : "keys"} registered
+        </Typography>
+        <div className="flex flex-wrap items-center gap-2">
+          {canEdit ? (
             <Chip size="sm" variant="success" icon={<ShieldCheck className="size-3" />}>
               <span className="whitespace-nowrap">Superadmin · can edit</span>
             </Chip>
@@ -61,45 +79,27 @@ export function SettingsContent() {
             <Chip size="sm" variant="neutral" icon={<Eye className="size-3" />}>
               <span className="whitespace-nowrap">Read-only</span>
             </Chip>
-          )
-        }
-        actions={
-          canEdit && (
-            <Button
-              variant="primary"
-              size="sm"
-              leftIcon={<Plus className="size-3.5" />}
-              onClick={openAdd}
-            >
+          )}
+          {canEdit && (
+            <Button variant="primary" size="sm" leftIcon={<Plus className="size-3.5" />} onClick={openAdd}>
               Add setting
             </Button>
-          )
-        }
-        onRefresh={() => void load()}
-        refreshing={state.refreshing}
-        updatedAt={state.fetchedAt}
-      />
-
-      {state.refreshError && <StaleDataBanner error={state.refreshError} />}
-      {!canEdit && (
-        <Banner
-          variant="info"
-          size="sm"
-          bannerStyle="subtle"
-          description="Only superadmins can change platform settings. You can review the current values."
-        />
-      )}
+          )}
+        </div>
+      </div>
 
       <SettingsKpis summary={data.summary} />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Tabs
-          items={tabs}
-          activeTab={state.activeTab}
-          onTabChange={(id) => setActiveTab(id as CategoryTab)}
-          variant="button"
-          size="sm"
-        />
+        <div className="w-full overflow-x-auto pb-1 sm:w-auto sm:pb-0">
+          <Tabs
+            items={tabs}
+            activeTab={state.activeTab}
+            onTabChange={(id) => setActiveTab(id as CategoryTab)}
+            variant="button"
+            size="sm"
+          />
+        </div>
         {unsaved > 0 && (
           <Chip size="sm" variant="warning">
             <span className="whitespace-nowrap">
@@ -109,7 +109,7 @@ export function SettingsContent() {
         )}
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-3">
         {visible.map((c) => (
           <SettingsCategorySection
             key={c.category}
@@ -124,4 +124,4 @@ export function SettingsContent() {
       <DeleteSettingModal />
     </div>
   );
-}
+};

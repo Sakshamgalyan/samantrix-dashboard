@@ -4,37 +4,51 @@ import React, {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useReducer,
 } from "react";
+import { skipToken } from "@reduxjs/toolkit/query/react";
 import { useToast } from "@galyan/ui";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/features/auth";
+import { pageParams } from "@/features/common/pagination";
+import { useDebounce } from "@/hooks/use-debounce";
+import { POLL_INTERVAL_MS, queryErrorMessage } from "@/store";
+import { hasPermission, isSuperadmin } from "@/utils/roles";
 import type {
   AdminOrganization,
+  AssignSubscriptionRequest,
+  CreateOrganizationRequest,
+  OrganizationProfileInput,
   OrganizationsContextType,
-  OrgStatus,
+  OrganizationsState,
+  PlanFilter,
   SettableOrgStatus,
   StatusTab,
-} from "../types";
-import { initialOrganizationsState, organizationsReducer } from "./reducer";
-import * as actions from "./action";
+} from "@/features/organizations/types";
+import { initialOrganizationsState, organizationsReducer } from "@/features/organizations/context/reducer";
+import * as actions from "@/features/organizations/context/action";
 import {
-  fetchOrganizationDetailApi,
-  fetchOrganizationsApi,
-  getApiErrorMessage,
-  updateOrganizationStatusApi,
-} from "./api";
+  LONG_LIVED_QUERY,
+  useAssignSubscriptionMutation,
+  useCreateOrganizationMutation,
+  useDeleteOrganizationMutation,
+  useGetAdminOrganizationsQuery,
+  useGetAdminOrganizationsSummaryQuery,
+  useGetAdminPlansQuery,
+  useGetOrganizationDetailQuery,
+  useLazyGetOrganizationDetailQuery,
+  useUpdateOrganizationMutation,
+  useUpdateOrganizationStatusMutation,
+} from "@/features/organizations/context/api";
 
-/** Statuses each tab covers. */
-const TAB_STATUSES: Record<Exclude<StatusTab, "ALL">, OrgStatus[]> = {
-  ACTIVE: ["ACTIVE"],
-  TRIAL: ["TRIAL", "TRIALING"],
-  PENDING: ["PENDING"],
-  SUSPENDED: ["SUSPENDED"],
-  CANCELLED: ["CANCELLED", "DELETED"],
-};
+const LIST_POLLING = {
+  pollingInterval: POLL_INTERVAL_MS,
+  skipPollingIfUnfocused: true,
+} as const;
 
-const OrganizationsContext = createContext<
+
+export const OrganizationsContext = createContext<
   OrganizationsContextType | undefined
 >(undefined);
 
@@ -45,39 +59,130 @@ export function OrganizationsProvider({
 }) {
   const { toast } = useToast();
   const { user } = useAuth();
-  const [state, dispatch] = useReducer(
+  const [ui, dispatch] = useReducer(
     organizationsReducer,
     initialOrganizationsState,
   );
 
-  const canManage =
-    user?.platformRole === "SUPERADMIN" ||
-    user?.platformRole === "PLATFORM_ADMIN";
+  const canManage = hasPermission(user, "organizations:manage");
+  const canHardDelete = isSuperadmin(user);
 
-  const load = useCallback(() => fetchOrganizationsApi(dispatch), []);
+  // Counts are shared with the admin overview: one request, one cache entry, refreshed every minute
+  const summaryQuery = useGetAdminOrganizationsSummaryQuery(undefined, LIST_POLLING);
+  // One server-filtered page (the backend maps TRIAL / CANCELLED to their status groups);
+  // page 1 without filters is the same cache entry as the overview's recent organizations
+  const listQuery = useGetAdminOrganizationsQuery(
+    pageParams(ui.page, {
+      status: ui.tab,
+      planTier: ui.plan,
+      search: ui.appliedSearch,
+    }),
+    LIST_POLLING,
+  );
+  // The detail dialog and the edit-form prefill read the same per-organization cache entry
+  const detailQuery = useGetOrganizationDetailQuery(ui.detailOrgId ?? skipToken);
+  const [loadDetail] = useLazyGetOrganizationDetailQuery();
+  // Plans are only needed by the subscription form; cached long-term once loaded
+  const plansQuery = useGetAdminPlansQuery(undefined, {
+    ...LONG_LIVED_QUERY,
+    skip: !ui.subscriptionDialog,
+  });
+
+  const [updateOrganizationStatus] = useUpdateOrganizationStatusMutation();
+  const [createOrganization] = useCreateOrganizationMutation();
+  const [updateOrganization] = useUpdateOrganizationMutation();
+  const [assignSubscription] = useAssignSubscriptionMutation();
+  const [deleteOrganization] = useDeleteOrganizationMutation();
+
+  const { refetch: refetchSummary } = summaryQuery;
+  const { refetch: refetchList } = listQuery;
+
+  // Copy the typed search into the query after a short pause
+  const debouncedSearch = useDebounce(ui.search, 350);
+  useEffect(() => {
+    dispatch(actions.applySearch(debouncedSearch.trim()));
+  }, [debouncedSearch]);
+  const { refetch: refetchDetail } = detailQuery;
+
+  // Keep the last good data on screen; components show the error only when nothing is cached
+  const state = useMemo<OrganizationsState>(
+    () => ({
+      ...ui,
+      summary: summaryQuery.data ?? null,
+      error: summaryQuery.error
+        ? queryErrorMessage(summaryQuery.error, "Couldn't load organizations.")
+        : null,
+      rows: listQuery.data?.data ?? [],
+      meta: listQuery.data?.meta ?? null,
+      // Old rows stay up while another page/filter loads; skeleton only when there's nothing to show
+      listLoading:
+        listQuery.isFetching && !listQuery.currentData && !listQuery.data?.data.length,
+      detail: ui.detailOrgId
+        ? {
+            orgId: ui.detailOrgId,
+            data: detailQuery.currentData ?? null,
+            loading: detailQuery.isFetching,
+            error: detailQuery.error
+              ? queryErrorMessage(detailQuery.error, "Couldn't load this organization.")
+              : null,
+          }
+        : null,
+      // A failed plan lookup still opens the form (with no plans to pick from)
+      plans: plansQuery.data ?? (plansQuery.isError ? [] : null),
+    }),
+    [
+      ui,
+      summaryQuery.data,
+      summaryQuery.error,
+      listQuery.data,
+      listQuery.currentData,
+      listQuery.isFetching,
+      detailQuery.currentData,
+      detailQuery.isFetching,
+      detailQuery.error,
+      plansQuery.data,
+      plansQuery.isError,
+    ],
+  );
 
   const refresh = useCallback(() => {
     dispatch(actions.setRefreshing(true));
-    void load();
-  }, [load]);
+    const pending: Promise<unknown>[] = [refetchSummary(), refetchList()];
+    if (ui.detailOrgId) pending.push(refetchDetail());
+    void Promise.allSettled(pending).then(() =>
+      dispatch(actions.setRefreshing(false)),
+    );
+  }, [refetchSummary, refetchList, refetchDetail, ui.detailOrgId]);
 
   const setTab = useCallback(
     (tab: StatusTab) => dispatch(actions.setTab(tab)),
     [],
   );
-
+  const setPlan = useCallback(
+    (plan: PlanFilter) => dispatch(actions.setPlan(plan)),
+    [],
+  );
   const setSearch = useCallback(
     (search: string) => dispatch(actions.setSearch(search)),
     [],
   );
+  const setPage = useCallback(
+    (page: number) => dispatch(actions.setPage(page)),
+    [],
+  );
 
-  const openDetail = useCallback((orgId: string) => {
-    dispatch(actions.openDetail(orgId));
-    void fetchOrganizationDetailApi(orgId, dispatch);
-  }, []);
+  const openDetail = useCallback(
+    (orgId: string) => {
+      // Re-opening the same organization (e.g. "Try again") refetches it
+      if (orgId === ui.detailOrgId) void refetchDetail();
+      else dispatch(actions.openDetail(orgId));
+    },
+    [ui.detailOrgId, refetchDetail],
+  );
 
   const closeDetail = useCallback(() => dispatch(actions.closeDetail()), []);
 
+  // ── Status ─────────────────────────────────────────────────────────────
   const openStatusDialog = useCallback(
     (org: AdminOrganization, target: SettableOrgStatus) =>
       dispatch(actions.openStatusDialog(org, target)),
@@ -99,72 +204,200 @@ export function OrganizationsProvider({
     dispatch(actions.setStatusSubmitting(true));
     try {
       const reason = dialog.reason.trim();
-      await updateOrganizationStatusApi(dialog.org.id, {
-        status: dialog.target,
-        ...(reason ? { reason } : {}),
-      });
+      await updateOrganizationStatus({
+        orgId: dialog.org.id,
+        body: { status: dialog.target, ...(reason ? { reason } : {}) },
+      }).unwrap();
       toast.success(
         dialog.target === "SUSPENDED"
           ? `${dialog.org.name} is suspended.`
-          : `${dialog.org.name} is active again.`,
+          : `${dialog.org.name} is active.`,
       );
+      // The mutation invalidates the list and this organization's detail for every screen
       dispatch(actions.closeStatusDialog());
-      await load();
-      if (state.detail?.orgId === dialog.org.id) {
-        void fetchOrganizationDetailApi(dialog.org.id, dispatch);
-      }
     } catch (err) {
       dispatch(actions.setStatusSubmitting(false));
       toast.error(
-        getApiErrorMessage(err, "That status change failed. Please try again."),
+        queryErrorMessage(err, "That status change failed. Please try again."),
       );
     }
-  }, [state.statusDialog, state.detail?.orgId, load, toast]);
+  }, [state.statusDialog, updateOrganizationStatus, toast]);
 
-  const visible = useMemo(() => {
-    const term = state.search.trim().toLowerCase();
-    return (state.data?.organizations ?? []).filter(
-      (org) =>
-        (state.tab === "ALL" || TAB_STATUSES[state.tab].includes(org.status)) &&
-        (!term ||
-          org.name.toLowerCase().includes(term) ||
-          org.slug.toLowerCase().includes(term) ||
-          org.owner.fullName.toLowerCase().includes(term) ||
-          org.owner.email.toLowerCase().includes(term)),
-    );
-  }, [state.data, state.tab, state.search]);
+  // ── Create / edit ──────────────────────────────────────────────────────
+  const openCreate = useCallback(
+    () => dispatch(actions.setFormDialog({ mode: "create", org: null })),
+    [],
+  );
+
+  const openEdit = useCallback(
+    async (orgId: string) => {
+      try {
+        // Reuses the cached detail (e.g. the open detail dialog) instead of fetching again
+        const org = await loadDetail(orgId, true).unwrap();
+        dispatch(actions.setFormDialog({ mode: "edit", org }));
+      } catch (err) {
+        toast.error(queryErrorMessage(err, "Couldn't open this organization."));
+      }
+    },
+    [loadDetail, toast],
+  );
+
+  const closeForm = useCallback(() => dispatch(actions.setFormDialog(null)), []);
+
+  const submitCreate = useCallback(
+    async (body: CreateOrganizationRequest) => {
+      try {
+        const created = await createOrganization(body).unwrap();
+        toast.success(
+          created.ownerCreated
+            ? `${created.name} created. The owner was emailed how to set a password.`
+            : `${created.name} created.`,
+        );
+        dispatch(actions.setFormDialog(null));
+        return true;
+      } catch (err) {
+        toast.error(
+          queryErrorMessage(err, "Couldn't create the organization."),
+        );
+        return false;
+      }
+    },
+    [createOrganization, toast],
+  );
+
+  const submitEdit = useCallback(
+    async (orgId: string, body: Partial<OrganizationProfileInput>) => {
+      try {
+        const updated = await updateOrganization({ orgId, body }).unwrap();
+        toast.success(`${updated.name} saved.`);
+        dispatch(actions.setFormDialog(null));
+        return true;
+      } catch (err) {
+        toast.error(queryErrorMessage(err, "Couldn't save your changes."));
+        return false;
+      }
+    },
+    [updateOrganization, toast],
+  );
+
+  // ── Subscription ───────────────────────────────────────────────────────
+  // Opening the dialog subscribes the cached plans query
+  const openSubscription = useCallback(
+    (org: AdminOrganization) => dispatch(actions.setSubscriptionDialog(org)),
+    [],
+  );
+
+  const closeSubscription = useCallback(
+    () => dispatch(actions.setSubscriptionDialog(null)),
+    [],
+  );
+
+  const submitSubscription = useCallback(
+    async (orgId: string, body: AssignSubscriptionRequest) => {
+      try {
+        const result = await assignSubscription({ orgId, body }).unwrap();
+        toast.success(`Subscription updated for ${result.name}.`);
+        dispatch(actions.setSubscriptionDialog(null));
+        return true;
+      } catch (err) {
+        toast.error(
+          queryErrorMessage(err, "Couldn't assign the subscription."),
+        );
+        return false;
+      }
+    },
+    [assignSubscription, toast],
+  );
+
+  // ── Delete ─────────────────────────────────────────────────────────────
+  const openDelete = useCallback(
+    (org: AdminOrganization) => dispatch(actions.setDeleteDialog(org)),
+    [],
+  );
+
+  const closeDelete = useCallback(
+    () => dispatch(actions.setDeleteDialog(null)),
+    [],
+  );
+
+  const submitDelete = useCallback(
+    async (orgId: string, hard: boolean) => {
+      try {
+        const result = await deleteOrganization({ orgId, hard }).unwrap();
+        toast.success(
+          result.deleted === "hard"
+            ? `${result.name} was permanently deleted.`
+            : `${result.name} was deleted.`,
+        );
+        dispatch(actions.setDeleteDialog(null));
+        // A permanently deleted organization has no detail left to show
+        if (hard) dispatch(actions.closeDetail());
+        return true;
+      } catch (err) {
+        toast.error(
+          queryErrorMessage(err, "Couldn't delete the organization."),
+        );
+        return false;
+      }
+    },
+    [deleteOrganization, toast],
+  );
 
   const value = useMemo<OrganizationsContextType>(
     () => ({
       state,
       dispatch,
-      visible,
       canManage,
-      load,
+      canHardDelete,
       refresh,
       setTab,
+      setPlan,
       setSearch,
+      setPage,
       openDetail,
       closeDetail,
       openStatusDialog,
       setStatusReason,
       closeStatusDialog,
       submitStatusChange,
+      openCreate,
+      openEdit,
+      closeForm,
+      submitCreate,
+      submitEdit,
+      openSubscription,
+      closeSubscription,
+      submitSubscription,
+      openDelete,
+      closeDelete,
+      submitDelete,
     }),
     [
       state,
-      visible,
       canManage,
-      load,
+      canHardDelete,
       refresh,
       setTab,
+      setPlan,
       setSearch,
+      setPage,
       openDetail,
       closeDetail,
       openStatusDialog,
       setStatusReason,
       closeStatusDialog,
       submitStatusChange,
+      openCreate,
+      openEdit,
+      closeForm,
+      submitCreate,
+      submitEdit,
+      openSubscription,
+      closeSubscription,
+      submitSubscription,
+      openDelete,
+      closeDelete,
+      submitDelete,
     ],
   );
 
@@ -184,3 +417,5 @@ export function useOrganizationsContext(): OrganizationsContextType {
   }
   return ctx;
 }
+
+export * from "@/features/organizations/context/hooks";

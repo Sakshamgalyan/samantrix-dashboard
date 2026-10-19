@@ -1,61 +1,22 @@
-import type React from "react";
-import { api, ApiError } from "@/lib/api";
-import type {
-  MarketingAction,
-  MarketingRange,
-  MarketingReport,
-  VisitorsResponse,
-} from "../types";
-import { VISITS_PAGE_SIZE } from "../common/constants";
-import {
-  reportFailure,
-  reportSuccess,
-  visitsFailure,
-  visitsLoading,
-  visitsSuccess,
-} from "./action";
+import { dashboardApi } from "@/store";
+import type { PageQueryParams } from "@/features/common/pagination";
+import type { MarketingRange, MarketingReport, VisitorsResponse } from "@/features/marketing-analytics/types";
 
-/** Loads the marketing report for a 7/30/90-day window into context. */
-export async function loadReportApi(
-  range: MarketingRange,
-  dispatch: React.Dispatch<MarketingAction>,
-): Promise<void> {
-  try {
-    dispatch(
-      reportSuccess(
-        await api.get<MarketingReport>(`/analytics/marketing?range=${range}`),
-      ),
-    );
-  } catch (err) {
-    dispatch(
-      reportFailure(
-        err instanceof ApiError
-          ? err.message
-          : "Couldn't load marketing analytics.",
-      ),
-    );
-  }
-}
+/** Marketing report and the recent-visits feed, cached per range / page. */
+export const marketingApi = dashboardApi.injectEndpoints({
+  endpoints: (build) => ({
+    /** The marketing report for a 7/30/90-day window (KPIs, trend and capped breakdowns). */
+    getMarketingReport: build.query<MarketingReport, MarketingRange>({
+      query: (range) => ({ url: "/analytics/marketing", params: { range } }),
+      providesTags: ["Marketing"],
+    }),
 
-/** Loads one page of the most recent visits (newest first) into context. */
-export async function loadVisitsApi(
-  page: number,
-  dispatch: React.Dispatch<MarketingAction>,
-): Promise<void> {
-  dispatch(visitsLoading());
-  try {
-    dispatch(
-      visitsSuccess(
-        await api.get<VisitorsResponse>(
-          `/analytics/visitors?page=${page}&limit=${VISITS_PAGE_SIZE}&sortBy=createdAt&sortOrder=desc`,
-        ),
-      ),
-    );
-  } catch (err) {
-    dispatch(
-      visitsFailure(
-        err instanceof ApiError ? err.message : "Couldn't load recent visits.",
-      ),
-    );
-  }
-}
+    /** One page of the most recent visits (newest first, the backend default); args from `pageParams`. */
+    getRecentVisits: build.query<VisitorsResponse, PageQueryParams>({
+      query: (params) => ({ url: "/analytics/visitors", params }),
+      providesTags: ["Marketing"],
+    }),
+  }),
+});
+
+export const { useGetMarketingReportQuery, useGetRecentVisitsQuery } = marketingApi;

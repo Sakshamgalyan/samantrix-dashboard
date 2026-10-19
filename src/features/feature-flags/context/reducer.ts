@@ -1,9 +1,7 @@
-import { ALL_CATEGORIES } from "../common/constants";
-import type { FeatureFlagsAction, FeatureFlagsState } from "../types";
+import { ALL_CATEGORIES } from "@/features/feature-flags/common/constants";
+import type { FeatureFlagsAction, FeatureFlagsUiState } from "@/features/feature-flags/types";
 
-export const initialFeatureFlagsState: FeatureFlagsState = {
-  overview: null,
-  loadError: null,
+export const initialFeatureFlagsState: FeatureFlagsUiState = {
   refreshing: false,
   category: ALL_CATEGORIES,
   search: "",
@@ -13,31 +11,12 @@ export const initialFeatureFlagsState: FeatureFlagsState = {
   importing: false,
 };
 
-export function featureFlagsReducer(
-  state: FeatureFlagsState,
+/** UI state only: the catalog comes from the RTK Query cache. */
+export const featureFlagsReducer = (
+  state: FeatureFlagsUiState,
   action: FeatureFlagsAction,
-): FeatureFlagsState {
+): FeatureFlagsUiState => {
   switch (action.type) {
-    case "LOAD_SUCCESS": {
-      const categories = new Set(
-        action.payload.features.map((f) => f.category),
-      );
-      return {
-        ...state,
-        overview: action.payload,
-        loadError: null,
-        refreshing: false,
-        // Drop a category tab whose last feature was deleted or moved
-        category:
-          state.category === ALL_CATEGORIES || categories.has(state.category)
-            ? state.category
-            : ALL_CATEGORIES,
-      };
-    }
-
-    case "LOAD_FAILURE":
-      return { ...state, loadError: action.payload, refreshing: false };
-
     case "SET_REFRESHING":
       return { ...state, refreshing: action.payload };
 

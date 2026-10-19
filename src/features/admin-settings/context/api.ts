@@ -1,52 +1,65 @@
-import type React from "react";
-import { api, ApiError } from "@/lib/api";
+import { dashboardApi } from "@/store";
 import type {
   CreateSettingPayload,
   PlatformSetting,
   PlatformSettingsResponse,
   RemoveSettingResult,
-  SettingsAction,
   UpdateSettingPayload,
-} from "../types";
-import { loadFailure, loadStart, loadSuccess } from "./action";
+} from "@/features/admin-settings/types/api";
 
 const settingPath = (key: string) =>
   `/platform-settings/${encodeURIComponent(key)}`;
 
-export function getApiErrorMessage(err: unknown, fallback: string): string {
-  return err instanceof ApiError ? err.message : fallback;
-}
+/** Platform-wide configuration (built-in defaults included, secrets masked). */
+export const platformSettingsApi = dashboardApi.injectEndpoints({
+  endpoints: (build) => ({
+    getPlatformSettings: build.query<PlatformSettingsResponse, void>({
+      query: () => "/platform-settings",
+      providesTags: ["PlatformSettings"],
+    }),
 
-/** Loads every setting (built-in defaults included, secrets masked) into context. */
-export async function fetchSettingsApi(
-  dispatch: React.Dispatch<SettingsAction>,
-  background: boolean,
-): Promise<void> {
-  dispatch(loadStart(background));
-  try {
-    const data = await api.get<PlatformSettingsResponse>("/platform-settings");
-    dispatch(loadSuccess(data, new Date().toISOString()));
-  } catch (err) {
-    dispatch(
-      loadFailure(getApiErrorMessage(err, "Could not load platform settings.")),
-    );
-  }
-}
+    createPlatformSetting: build.mutation<PlatformSetting, CreateSettingPayload>({
+      query: (body) => ({ url: "/platform-settings", method: "POST", body }),
+      invalidatesTags: ["PlatformSettings"],
+    }),
 
-export function createSettingApi(
-  payload: CreateSettingPayload,
-): Promise<PlatformSetting> {
-  return api.post<PlatformSetting>("/platform-settings", payload);
-}
+    updatePlatformSetting: build.mutation<
+      PlatformSetting,
+      { key: string; body: UpdateSettingPayload }
+    >({
+      query: ({ key, body }) => ({ url: settingPath(key), method: "PATCH", body }),
+      // Show the saved row straight away (its draft is cleared); the invalidation refreshes the summary
+      async onQueryStarted({ key }, { dispatch, queryFulfilled }) {
+        try {
+          const { data: saved } = await queryFulfilled;
+          if (!saved || saved.key !== key) return;
+          dispatch(
+            platformSettingsApi.util.updateQueryData("getPlatformSettings", undefined, (draft) => {
+              for (const group of draft.categories) {
+                const i = group.settings.findIndex((s) => s.key === key);
+                // A category change moves the row; leave that to the refetch
+                if (i >= 0 && group.category === saved.category) group.settings[i] = saved;
+              }
+            }),
+          );
+        } catch {
+          // The caller shows the error
+        }
+      },
+      invalidatesTags: ["PlatformSettings"],
+    }),
 
-export function updateSettingApi(
-  key: string,
-  payload: UpdateSettingPayload,
-): Promise<PlatformSetting> {
-  return api.patch<PlatformSetting>(settingPath(key), payload);
-}
+    /** Deletes a custom setting, or resets a built-in one to its default. */
+    removePlatformSetting: build.mutation<RemoveSettingResult, string>({
+      query: (key) => ({ url: settingPath(key), method: "DELETE" }),
+      invalidatesTags: ["PlatformSettings"],
+    }),
+  }),
+});
 
-/** Deletes a custom setting, or resets a built-in one to its default. */
-export function removeSettingApi(key: string): Promise<RemoveSettingResult> {
-  return api.delete<RemoveSettingResult>(settingPath(key));
-}
+export const {
+  useGetPlatformSettingsQuery,
+  useCreatePlatformSettingMutation,
+  useUpdatePlatformSettingMutation,
+  useRemovePlatformSettingMutation,
+} = platformSettingsApi;

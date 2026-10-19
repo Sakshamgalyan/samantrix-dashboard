@@ -1,27 +1,6 @@
-import type {
-  CategoryTab,
-  PlatformSetting,
-  PlatformSettingsResponse,
-  SettingsAction,
-} from "../types";
-
-export const loadStart = (background: boolean): SettingsAction => ({
-  type: "LOAD_START",
-  payload: { background },
-});
-
-export const loadSuccess = (
-  data: PlatformSettingsResponse,
-  at: string,
-): SettingsAction => ({
-  type: "LOAD_SUCCESS",
-  payload: { data, at },
-});
-
-export const loadFailure = (message: string): SettingsAction => ({
-  type: "LOAD_FAILURE",
-  payload: message,
-});
+import type { PlatformSetting } from "@/features/admin-settings/types/api";
+import type { CategoryTab } from "@/features/admin-settings/types/state";
+import type { SettingsAction } from "@/features/admin-settings/types/actions";
 
 export const setActiveTab = (tab: CategoryTab): SettingsAction => ({
   type: "SET_ACTIVE_TAB",

@@ -1,4 +1,3 @@
-export * from "./context/auth-context";
-export * from "./context";
-export * from "./types";
-export { AuthPage, default } from "./page";
+export * from "@/features/auth/context/auth-context";
+export * from "@/features/auth/context";
+export { AuthPage, default } from "@/features/auth/page";

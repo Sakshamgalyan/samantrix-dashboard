@@ -1,8 +1,7 @@
 "use client";
 
 import { Component, type ErrorInfo, type ReactNode } from "react";
-import { Button, EmptyState } from "@galyan/ui";
-import { AlertTriangle, RotateCcw } from "lucide-react";
+import { ServerErrorView } from "@/components/layout/common/server-error-view";
 
 interface Props {
   children: ReactNode;
@@ -31,22 +30,10 @@ export class PageErrorBoundary extends Component<Props, State> {
     if (!this.state.error) return this.props.children;
 
     return (
-      <EmptyState
-        variant="dashed"
-        size="lg"
-        icon={<AlertTriangle className="size-6 text-[var(--gy-danger)]" />}
-        title="This page couldn't be displayed"
-        description={this.state.error.message || "An unexpected error occurred while rendering this page."}
-        action={
-          <Button
-            variant="primary"
-            size="sm"
-            leftIcon={<RotateCcw className="size-4" />}
-            onClick={() => this.setState({ error: null })}
-          >
-            Try again
-          </Button>
-        }
+      <ServerErrorView
+        fullScreen={false}
+        error={this.state.error}
+        onRetry={() => this.setState({ error: null })}
       />
     );
   }

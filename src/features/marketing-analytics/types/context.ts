@@ -1,7 +1,7 @@
 import type React from "react";
-import type { MarketingRange } from "./api";
-import type { MarketingAction } from "./actions";
-import type { MarketingPageState } from "./state";
+import type { MarketingRange } from "@/features/marketing-analytics/types/api";
+import type { MarketingAction } from "@/features/marketing-analytics/types/actions";
+import type { MarketingPageState } from "@/features/marketing-analytics/types/state";
 
 export interface MarketingContextType {
   state: MarketingPageState;

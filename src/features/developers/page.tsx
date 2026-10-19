@@ -1,7 +1,7 @@
 "use client";
 
-import { DevelopersProvider } from "./context";
-import { DevelopersContent } from "./components/developers-content";
+import { DevelopersProvider } from "@/features/developers/context";
+import { DevelopersContent } from "@/features/developers/components/developers-content";
 
 /** /admin/developers: review, approve, re-role and revoke developer accounts. */
 export function AdminDevelopersPage() {

@@ -1,12 +1,12 @@
 # ==============================================================================
-# Samantrix Dashboard — Next.js 16 Admin Console
+# Simantrix Dashboard — Next.js 16 Admin Console
 # Multi-stage Dockerfile optimized for pnpm, standalone output & small footprint
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
 # Stage 1: Base Alpine image with Corepack & pnpm enabled
 # ------------------------------------------------------------------------------
-FROM node:22-alpine AS base
+FROM node:26-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable && corepack prepare pnpm@11.20.0 --activate
@@ -46,11 +46,11 @@ RUN pnpm run build
 # ------------------------------------------------------------------------------
 # Stage 4: Lean production runtime container
 # ------------------------------------------------------------------------------
-FROM node:22-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=4200
+ENV PORT=4100
 ENV HOSTNAME="0.0.0.0"
 ENV NEXT_TELEMETRY_DISABLED=1
 
@@ -73,11 +73,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 USER nextjs
 
 # Expose dashboard port
-EXPOSE 4200
+EXPOSE 4100
 
 # Container healthcheck
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-  CMD curl -f http://localhost:4200/ || exit 1
+  CMD curl -f http://localhost:4100/ || exit 1
 
 # Signal-aware entrypoint
 ENTRYPOINT ["/usr/bin/dumb-init", "--"]

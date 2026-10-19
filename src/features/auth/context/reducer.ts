@@ -1,4 +1,5 @@
-import type { AuthPageState, AuthAction } from "../types";
+import type { AuthPageState } from "@/features/auth/types/state";
+import type { AuthAction } from "@/features/auth/types/actions";
 
 export const initialAuthState: AuthPageState = {
   authMode: "login",
@@ -23,10 +24,10 @@ export const initialAuthState: AuthPageState = {
   apiResponse: null,
 };
 
-export function authReducer(
+export const authReducer = (
   state: AuthPageState,
   action: AuthAction,
-): AuthPageState {
+): AuthPageState => {
   switch (action.type) {
     case "SET_AUTH_MODE":
       return {
@@ -167,4 +168,4 @@ export function authReducer(
     default:
       return state;
   }
-}
+};

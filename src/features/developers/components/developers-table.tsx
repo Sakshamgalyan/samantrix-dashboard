@@ -1,220 +1,242 @@
 "use client";
 
-import { Button, Chip, Table, Tooltip, type Column } from "@galyan/ui";
+import { useMemo } from "react";
+import {
+  Button,
+  Chip,
+  Menu,
+  Table,
+  Tooltip,
+  type Column,
+  type MenuItem,
+} from "@galyan/ui";
 import {
   CheckCircle2,
+  Lock,
+  MoreHorizontal,
+  MoreVertical,
+  Pencil,
   ShieldBan,
   ShieldCheck,
+  Trash2,
   UserCog,
-  Wifi,
   XCircle,
 } from "lucide-react";
-import { formatDate, relativeTime } from "@/lib/format";
-import { useDevelopersContext } from "../context";
-import { STATUS_META, roleLabel } from "../common/constants";
-import type { DeveloperAccount } from "../types";
+import { tablePagination } from "@/features/common/pagination";
+import { formatDate, relativeTime } from "@/utils/format";
+import { useMediaQuery } from "@/hooks/use-media-query";
+import { useMounted } from "@/hooks/use-mounted";
+import { useDevelopersContext } from "@/features/developers/context";
+import { ROLE_CHIP, STATUS_META, roleLabel } from "@/features/developers/common/constants";
+import type { DeveloperAccount, DeveloperDialogKind } from "@/features/developers/types";
+
+const ICON = "size-3.5";
+
+/** Menu entries for a row, by account status. */
+function menuItems(dev: DeveloperAccount): MenuItem[] {
+  switch (dev.status) {
+    case "PENDING_VERIFICATION":
+      return [
+        { id: "approve", label: "Approve…", icon: <CheckCircle2 className={ICON} /> },
+        { id: "reject", label: "Reject", icon: <XCircle className={ICON} /> },
+        { id: "delete", label: "Delete", icon: <Trash2 className={ICON} /> },
+      ];
+    case "INACTIVE":
+      return [
+        { id: "reinstate", label: "Reinstate…", icon: <ShieldCheck className={ICON} /> },
+        { id: "delete", label: "Delete", icon: <Trash2 className={ICON} /> },
+      ];
+    default:
+      return [
+        { id: "edit", label: "Edit details", icon: <Pencil className={ICON} /> },
+        { id: "role", label: "Change role", icon: <UserCog className={ICON} /> },
+        dev.status === "SUSPENDED"
+          ? { id: "reactivate", label: "Reactivate", icon: <ShieldCheck className={ICON} /> }
+          : { id: "suspend", label: "Suspend", icon: <ShieldBan className={ICON} /> },
+        { id: "delete", label: "Delete", icon: <Trash2 className={ICON} />, divider: true },
+      ];
+  }
+}
 
 function RowActions({ row }: { row: DeveloperAccount }) {
-  const { currentUserId, actorIsSuperadmin, openDialog } =
-    useDevelopersContext();
-  const isSelf = row.id === currentUserId;
-  const protectedSuper =
-    row.platformRole === "SUPERADMIN" && !actorIsSuperadmin;
-  const locked = isSelf || protectedSuper;
+  const { permissionsFor, openDialog } = useDevelopersContext();
+  const { canManage, reason } = permissionsFor(row);
 
-  if (row.status === "PENDING_VERIFICATION") {
-    return (
-      <>
-        <Button
-          variant="success"
-          size="xs"
-          leftIcon={<CheckCircle2 className="size-3" />}
-          onClick={() => openDialog({ kind: "approve", dev: row })}
-        >
-          Approve
-        </Button>
-        <Button
-          variant="danger-soft"
-          size="xs"
-          leftIcon={<XCircle className="size-3" />}
-          onClick={() => openDialog({ kind: "reject", dev: row })}
-        >
-          Reject
-        </Button>
-      </>
-    );
-  }
-
-  if (row.status === "ACTIVE") {
-    const buttons = (
-      <span className="flex gap-2">
-        <Button
-          variant="glass"
-          size="xs"
-          leftIcon={<UserCog className="size-3" />}
-          disabled={locked}
-          onClick={() => openDialog({ kind: "role", dev: row })}
-        >
-          Role
-        </Button>
-        <Button
-          variant="danger-soft"
-          size="xs"
-          leftIcon={<ShieldBan className="size-3" />}
-          disabled={locked}
-          onClick={() => openDialog({ kind: "revoke", dev: row })}
-        >
-          Revoke
-        </Button>
-      </span>
-    );
-    return locked ? (
-      <Tooltip
-        content={
-          isSelf
-            ? "You can't change your own access"
-            : "Only a Superadmin can change a Superadmin"
-        }
-        position="left"
-        size="sm"
-      >
-        {buttons}
+  if (!canManage) {
+    return reason ? (
+      <Tooltip content={reason} position="left" size="sm">
+        <span className="inline-flex size-7 items-center justify-center text-[var(--gy-text-subtle)]">
+          <Lock className="size-3.5" />
+        </span>
       </Tooltip>
-    ) : (
-      buttons
-    );
+    ) : null;
   }
 
   return (
-    <Button
-      variant="glass"
-      size="xs"
-      leftIcon={<ShieldCheck className="size-3" />}
-      disabled={protectedSuper}
-      onClick={() => openDialog({ kind: "reinstate", dev: row })}
-    >
-      Reinstate
-    </Button>
+    <Menu
+      items={menuItems(row)}
+      size="sm"
+      variant="default"
+      placement="bottom-end"
+      width={180}
+      onItemClick={(id) =>
+        openDialog({ kind: id as DeveloperDialogKind, dev: row })
+      }
+      trigger={
+        <Button
+          variant="ghost"
+          size="xs"
+          leftIcon={<MoreVertical className="size-4" />}
+          aria-label={`Actions for ${row.fullName}`}
+        />
+      }
+    />
   );
 }
 
 export function DevelopersTable() {
-  const { visibleDevelopers, currentUserId } = useDevelopersContext();
+  const { state, setPage, currentUserId } = useDevelopersContext();
+  const isMounted = useMounted();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const showFullColumns = !isMounted || isDesktop;
 
-  const columns: Column<DeveloperAccount>[] = [
-    {
-      key: "fullName",
-      header: "Developer",
-      accessor: (row) => (
-        <div className="flex items-center gap-3">
-          <div className="relative grid size-9 shrink-0 place-items-center rounded-xl bg-[var(--gy-primary)]/12 text-xs font-semibold text-[var(--gy-primary)]">
-            {row.fullName.slice(0, 2).toUpperCase()}
-            {row.online && (
-              <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-[var(--gy-success)] ring-2 ring-[var(--gy-surface)]" />
-            )}
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <span className="truncate text-sm font-semibold text-[var(--gy-text)]">
-                {row.fullName}
-              </span>
-              {row.id === currentUserId && (
-                <Chip size="sm" variant="soft">
-                  You
-                </Chip>
-              )}
-            </div>
-            <div className="truncate text-xs text-[var(--gy-text-secondary)]">
-              {row.email}
-            </div>
-            <div className="truncate text-[11px] text-[var(--gy-text-subtle)]">
-              Joined {formatDate(row.createdAt)}
-            </div>
-          </div>
-        </div>
-      ),
-    },
-    {
-      key: "status",
-      width: "130px",
-      header: "Status",
-      accessor: (row) => (
-        <Chip size="sm" variant={STATUS_META[row.status]?.variant ?? "neutral"}>
-          {STATUS_META[row.status]?.label ?? row.status}
-        </Chip>
-      ),
-    },
-    {
-      key: "platformRole",
-      width: "150px",
-      header: "Role",
-      accessor: (row) => (
-        <span className="whitespace-nowrap text-sm text-[var(--gy-text)]">
-          {roleLabel(row.platformRole)}
-        </span>
-      ),
-    },
-    {
-      key: "security",
-      width: "180px",
-      header: "Security",
-      accessor: (row) => (
-        <div className="flex items-center gap-1.5 whitespace-nowrap">
-          <Chip size="sm" variant={row.isEmailVerified ? "success" : "warning"}>
-            {row.isEmailVerified ? "Verified" : "Unverified"}
-          </Chip>
-          <Chip size="sm" variant={row.twoFactorEnabled ? "soft" : "neutral"}>
-            {row.twoFactorEnabled ? "2FA on" : "No 2FA"}
-          </Chip>
-        </div>
-      ),
-    },
-    {
-      key: "lastSignInAt",
-      width: "150px",
-      header: "Last sign-in",
-      accessor: (row) =>
-        row.lastSignInAt ? (
-          <div className="text-xs">
-            <div className="flex items-center gap-1.5 text-[var(--gy-text)]">
+  const columns: Column<DeveloperAccount>[] = useMemo(() => {
+    return [
+      {
+        key: "fullName",
+        width: showFullColumns ? "260px" : "200px",
+        header: "Developer",
+        accessor: (row) => (
+          <div className="flex items-center gap-2.5">
+            <div className="relative grid size-8 shrink-0 place-items-center rounded-lg bg-[var(--gy-primary)]/12 text-xs font-semibold text-[var(--gy-primary)]">
+              {row.fullName.slice(0, 2).toUpperCase()}
               {row.online && (
-                <Wifi className="size-3 text-[var(--gy-success)]" />
+                <span
+                  className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-[var(--gy-success)] ring-2 ring-[var(--gy-surface)]"
+                  aria-label="Online"
+                />
               )}
-              {row.online ? "Online now" : relativeTime(row.lastSignInAt)}
             </div>
-            {row.lastDevice && (
-              <div className="text-[var(--gy-text-subtle)]">
-                {row.lastDevice}
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="truncate text-sm font-medium text-[var(--gy-text)]">
+                  {row.fullName}
+                </span>
+                {row.id === currentUserId && (
+                  <Chip size="xs" variant="soft">
+                    You
+                  </Chip>
+                )}
               </div>
-            )}
+              <div className="truncate text-xs text-[var(--gy-text-secondary)]">
+                {row.email}
+              </div>
+              {!showFullColumns && (
+                <div className="flex items-center gap-1.5 pt-0.5 text-[11px] text-[var(--gy-text-subtle)]">
+                  {row.online ? (
+                    <span className="inline-flex items-center gap-1 font-medium text-[var(--gy-success)]">
+                      <span className="size-1.5 rounded-full bg-[var(--gy-success)]" />
+                      Online
+                    </span>
+                  ) : row.lastSignInAt ? (
+                    <span>{relativeTime(row.lastSignInAt)}</span>
+                  ) : (
+                    <span>Joined {formatDate(row.createdAt)}</span>
+                  )}
+                  {row.phone && <span>· {row.phone}</span>}
+                </div>
+              )}
+            </div>
           </div>
-        ) : (
-          <span className="text-xs text-[var(--gy-text-subtle)]">Never</span>
         ),
-    },
-    {
-      key: "actions",
-      width: "180px",
-      header: "",
-      align: "right",
-      accessor: (row) => (
-        <div className="flex items-center justify-end gap-2">
-          <RowActions row={row} />
-        </div>
-      ),
-    },
-  ];
+      },
+      {
+        key: "platformRole",
+        width: showFullColumns ? "120px" : "100px",
+        header: "Role",
+        accessor: (row) => (
+          <Chip size="sm" variant={ROLE_CHIP[row.platformRole] ?? "neutral"}>
+            {roleLabel(row.platformRole)}
+          </Chip>
+        ),
+      },
+      {
+        key: "status",
+        width: showFullColumns ? "110px" : "90px",
+        header: "Status",
+        accessor: (row) => (
+          <Chip size="sm" variant={STATUS_META[row.status]?.variant ?? "neutral"}>
+            {STATUS_META[row.status]?.label ?? row.status}
+          </Chip>
+        ),
+      },
+      ...(showFullColumns
+        ? [
+            {
+              key: "lastSignInAt",
+              width: "170px",
+              header: "Last sign-in",
+              accessor: (row: DeveloperAccount) =>
+                row.lastSignInAt ? (
+                  <div className="text-xs">
+                    <div className="flex items-center gap-1.5 text-[var(--gy-text)]">
+                      {row.online && (
+                        <span className="size-1.5 rounded-full bg-[var(--gy-success)]" />
+                      )}
+                      {row.online ? "Online now" : relativeTime(row.lastSignInAt)}
+                    </div>
+                    {row.lastDevice && (
+                      <div className="truncate text-[var(--gy-text-subtle)]">
+                        {row.lastDevice}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <span className="text-xs text-[var(--gy-text-subtle)]">Never</span>
+                ),
+            },
+            {
+              key: "createdAt",
+              width: "110px",
+              header: "Joined",
+              accessor: (row: DeveloperAccount) => (
+                <span className="whitespace-nowrap text-xs text-[var(--gy-text-secondary)]">
+                  {formatDate(row.createdAt)}
+                </span>
+              ),
+            },
+          ]
+        : []),
+      {
+        key: "actions",
+        width: "52px",
+        header: "",
+        align: "right",
+        fixed: "right",
+        accessor: (row) => (
+          <div className="flex justify-end">
+            <RowActions row={row} />
+          </div>
+        ),
+      },
+    ];
+  }, [showFullColumns, currentUserId]);
 
   return (
-    <div className="overflow-x-auto">
+    <div className="w-full overflow-x-auto">
       <Table<DeveloperAccount>
         columns={columns}
-        data={visibleDevelopers}
+        data={state.rows}
         rowKey={(row) => row.id}
         hoverable
-        size="md"
+        size="sm"
+        isLoading={state.listLoading}
+        pagination={tablePagination(state.meta)}
+        onPageChange={setPage}
+        fixedRightmost
+        responsive="scroll"
         emptyStateLabel="No developers match"
-        emptyStateMessage="Try another tab or search term."
+        emptyStateMessage="Try another filter or search term."
       />
     </div>
   );

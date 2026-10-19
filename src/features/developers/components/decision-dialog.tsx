@@ -1,60 +1,106 @@
 "use client";
 
-import { Button, Dropdown, Modal } from "@galyan/ui";
-import { GLASS_ROW } from "@/components/admin";
-import { useDevelopersContext } from "../context";
-import { ROLE_DIALOGS } from "../common/constants";
-import type { DeveloperDialogKind } from "../types";
+import { Button, Dropdown, Input, Modal } from "@galyan/ui";
+import { GLASS_ROW } from "@/components/layout/common/glass";
+import { useDevelopersContext } from "@/features/developers/context";
+import { ROLE_DIALOGS } from "@/features/developers/common/constants";
+import type { DeveloperDialogKind } from "@/features/developers/types";
 
 const COPY: Record<
   DeveloperDialogKind,
-  { title: (name: string) => string; confirm: string; danger: boolean }
+  {
+    title: (name: string) => string;
+    confirm: string;
+    danger: boolean;
+    note: string;
+  }
 > = {
-  approve: { title: (n) => `Approve ${n}`, confirm: "Approve", danger: false },
+  approve: {
+    title: (n) => `Approve ${n}`,
+    confirm: "Approve",
+    danger: false,
+    note: "They're emailed that access is approved and can sign in right away.",
+  },
   reinstate: {
     title: (n) => `Reinstate ${n}`,
     confirm: "Reinstate",
     danger: false,
+    note: "They're emailed and can sign in again with this role.",
   },
   role: {
     title: (n) => `Change role for ${n}`,
     confirm: "Save role",
     danger: false,
+    note: "They're signed out on every device and get the new role when they sign in again.",
+  },
+  edit: {
+    title: (n) => `Edit ${n}`,
+    confirm: "Save changes",
+    danger: false,
+    note: "Changing the role or suspending signs them out on every device.",
   },
   reject: {
     title: (n) => `Reject ${n}?`,
     confirm: "Reject request",
     danger: true,
+    note: "Their request is declined and they're told by email. You can reinstate them later.",
   },
-  revoke: {
-    title: (n) => `Revoke ${n}'s access?`,
-    confirm: "Revoke access",
+  suspend: {
+    title: (n) => `Suspend ${n}?`,
+    confirm: "Suspend",
     danger: true,
+    note: "They're signed out on every device and can't sign in until reactivated.",
+  },
+  reactivate: {
+    title: (n) => `Reactivate ${n}?`,
+    confirm: "Reactivate",
+    danger: false,
+    note: "They can sign in again with their current role.",
+  },
+  delete: {
+    title: (n) => `Delete ${n}?`,
+    confirm: "Delete account",
+    danger: true,
+    note: "They're signed out everywhere and the account is permanently removed. This can't be undone.",
   },
 };
 
-/** Approve / change role / reinstate (with a role picker) and reject / revoke (confirm). */
+const STATUS_OPTIONS = [
+  { value: "ACTIVE", label: "Active" },
+  { value: "SUSPENDED", label: "Suspended" },
+];
+
+/** One modal for every developer action: role pickers, the edit form, and confirmations. */
 export function DecisionDialog() {
-  const { state, roleOptions, closeDialog, setRole, submitDialog } =
+  const { state, roleOptions, closeDialog, patchForm, submitDialog } =
     useDevelopersContext();
-  const { dialog, selectedRole, submitting } = state;
+  const { dialog, form, submitting } = state;
   const copy = dialog ? COPY[dialog.kind] : null;
+
+  const note = copy && (
+    <div
+      className={`${GLASS_ROW} px-3 py-2 text-xs text-[var(--gy-text-secondary)]`}
+    >
+      {copy.note}
+    </div>
+  );
 
   return (
     <Modal
-      variant="glass"
       isOpen={dialog !== null}
       onClose={closeDialog}
-      size="sm"
+      size="md"
       title={dialog && copy ? copy.title(dialog.dev.fullName) : undefined}
       subtitle={dialog?.dev.email}
       footer={
-        <div className="flex justify-end gap-2">
+        <div className="flex w-full flex-col-reverse gap-2 sm:w-auto sm:flex-row sm:justify-end">
           <Button
             variant="secondary"
             size="sm"
             onClick={closeDialog}
             disabled={submitting}
+            fullWidth
+            className="sm:w-auto"
           >
             Cancel
           </Button>
@@ -63,38 +109,65 @@ export function DecisionDialog() {
             size="sm"
             isLoading={submitting}
             onClick={submitDialog}
+            fullWidth
+            className="sm:w-auto"
           >
             {copy?.confirm}
           </Button>
         </div>
       }
     >
-      {dialog && ROLE_DIALOGS.has(dialog.kind) ? (
+      {dialog?.kind === "edit" ? (
+        <div className="space-y-3">
+          <Input
+            size="sm"
+            label="Full name"
+            value={form.fullName}
+            onChange={(e) => patchForm({ fullName: e.target.value })}
+            fullWidth
+          />
+          <Input
+            size="sm"
+            label="Phone"
+            value={form.phone}
+            onChange={(e) => patchForm({ phone: e.target.value })}
+            placeholder="+91 98765 43210"
+            fullWidth
+          />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Dropdown
+              size="sm"
+              label="Role"
+              options={roleOptions}
+              value={form.role}
+              onChange={(v) => patchForm({ role: v as string })}
+            />
+            <Dropdown
+              size="sm"
+              label="Status"
+              options={STATUS_OPTIONS}
+              value={form.status}
+              onChange={(v) =>
+                patchForm({ status: v as "ACTIVE" | "SUSPENDED" })
+              }
+            />
+          </div>
+          {note}
+        </div>
+      ) : dialog && ROLE_DIALOGS.has(dialog.kind) ? (
         <div className="space-y-3">
           <Dropdown
-            label="Platform role"
-            variant="glass"
+            size="sm"
+            label="Role"
             options={roleOptions}
-            value={selectedRole}
-            onChange={(v) => setRole(v as string)}
+            value={form.role}
+            onChange={(v) => patchForm({ role: v as string })}
           />
-          <div
-            className={`${GLASS_ROW} px-3 py-2.5 text-xs text-[var(--gy-text-secondary)]`}
-          >
-            {dialog.kind === "role"
-              ? "The new role applies on their next request."
-              : "They'll get an email saying their access is approved and can sign in right away."}
-          </div>
+          {note}
         </div>
-      ) : dialog ? (
-        <div
-          className={`${GLASS_ROW} px-3 py-2.5 text-sm text-[var(--gy-text-secondary)]`}
-        >
-          {dialog.kind === "revoke"
-            ? "They'll be signed out on every device and can't sign in again until reinstated. They'll be told by email."
-            : "Their request will be declined and they'll be told by email. You can reinstate them later."}
-        </div>
-      ) : null}
+      ) : (
+        note
+      )}
     </Modal>
   );
 }

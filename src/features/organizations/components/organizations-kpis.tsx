@@ -1,13 +1,13 @@
 "use client";
 
 import { Ban, Building2, CheckCircle2, Hourglass } from "lucide-react";
-import { KpiCard } from "@/components/admin";
-import { formatNumber } from "@/lib/format";
-import { useOrganizationsContext } from "../context";
+import { KpiCard } from "@/components/layout/common/kpi-card";
+import { formatNumber } from "@/utils/format";
+import { useOrganizationsContext } from "@/features/organizations/context";
 
-export function OrganizationsKpis() {
+export const OrganizationsKpis = () => {
   const { state } = useOrganizationsContext();
-  const counts = state.data?.counts;
+  const counts = state.summary?.counts;
   if (!counts) return null;
 
   const share = (n: number) =>
@@ -16,11 +16,11 @@ export function OrganizationsKpis() {
       : "no organizations yet";
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2.5 sm:gap-3 xl:grid-cols-4">
       <KpiCard
         label="Total organizations"
         value={counts.total}
-        caption={`${formatNumber(counts.newLast30d)} created in the last 30 days`}
+        caption={`${formatNumber(counts.newLast30d)} created in last 30d`}
         icon={<Building2 className="size-4" />}
         tone="primary"
       />
@@ -44,11 +44,11 @@ export function OrganizationsKpis() {
         caption={
           counts.pending || counts.cancelled
             ? `${counts.pending} pending · ${counts.cancelled} cancelled`
-            : "suspended by a platform admin"
+            : "none pending or cancelled"
         }
         icon={<Ban className="size-4" />}
         tone="danger"
       />
     </div>
   );
-}
+};

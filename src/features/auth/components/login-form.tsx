@@ -1,16 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuthPageContext } from "../context";
+import { zodResolver } from "@/lib/form-resolver";
+import { api } from "@/lib/api-client/apiClient";
+import { useAuthPageContext } from "@/features/auth/context";
 import {
   loginSchema,
   twoFactorSchema,
   type LoginFormValues,
   type TwoFactorFormValues,
-} from "../types";
+} from "@/features/auth/types/forms";
 import { Button, Input, Checkbox, Typography, Banner } from "@galyan/ui";
-import { AUTOFILL_FIX } from "../common/styles";
+import { AUTOFILL_FIX } from "@/features/auth/common/styles";
 import {
   Mail,
   Lock,
@@ -53,19 +55,19 @@ const MicrosoftIcon = () => (
   </svg>
 );
 
-function Divider({ label }: { label: string }) {
+const Divider = ({ label }: { label: string }) => {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2.5 my-0.5">
       <span className="h-px flex-1 bg-[var(--gy-divider)]" />
-      <Typography variant="span" className="text-[11px] uppercase tracking-wider text-[var(--gy-text-subtle)]">
+      <Typography variant="span" className="text-[10px] uppercase tracking-wider text-[var(--gy-text-subtle)]">
         {label}
       </Typography>
       <span className="h-px flex-1 bg-[var(--gy-divider)]" />
     </div>
   );
-}
+};
 
-export function LoginForm() {
+export const LoginForm = () => {
   const {
     loading,
     error,
@@ -83,6 +85,29 @@ export function LoginForm() {
     resetToLogin,
     setAuthMode,
   } = useAuthPageContext();
+
+  const [oauthLoading, setOauthLoading] = useState<"google" | "microsoft" | null>(null);
+
+  const handleOAuthSignIn = async (provider: "google" | "microsoft") => {
+    try {
+      setOauthLoading(provider);
+      setError(null);
+      const res = await api.get<{ url: string }>(`/auth/oauth/${provider}/url`, {
+        params: {
+          app: "dashboard",
+          redirectUri: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (res?.url) {
+        window.location.href = res.url;
+      } else {
+        throw new Error(`Failed to retrieve SSO redirect URL for ${provider}`);
+      }
+    } catch (err) {
+      setOauthLoading(null);
+      setError(err instanceof Error ? err.message : "Failed to initiate single sign-on.");
+    }
+  };
 
   const {
     register: registerLogin,
@@ -122,22 +147,22 @@ export function LoginForm() {
 
   if (requires2FA) {
     return (
-      <form onSubmit={handle2FASubmitForm(handle2FASubmit)} className="space-y-4">
-        <div className="space-y-3">
+      <form onSubmit={handle2FASubmitForm(handle2FASubmit)} className="space-y-3">
+        <div className="space-y-2">
           <span
-            className={`grid size-11 place-items-center rounded-xl ${
+            className={`grid size-9 place-items-center rounded-lg ${
               isBackupCodeMode
                 ? "bg-[var(--gy-warning)]/10 text-[var(--gy-warning)]"
                 : "bg-[var(--gy-primary)]/10 text-[var(--gy-primary)]"
             }`}
           >
-            {isBackupCodeMode ? <ShieldAlert className="size-5" /> : <KeyRound className="size-5" />}
+            {isBackupCodeMode ? <ShieldAlert className="size-4" /> : <KeyRound className="size-4" />}
           </span>
-          <div className="space-y-1">
-            <Typography variant="h4" weight="bold" className="tracking-tight text-[var(--gy-text)]">
+          <div className="space-y-0.5">
+            <Typography variant="h4" weight="bold" className="text-base tracking-tight text-[var(--gy-text)]">
               {isBackupCodeMode ? "Use a backup code" : "Two-factor verification"}
             </Typography>
-            <Typography variant="p" className="text-sm text-[var(--gy-text-secondary)]">
+            <Typography variant="p" className="text-xs text-[var(--gy-text-secondary)]">
               {isBackupCodeMode
                 ? "Enter one of your one-time recovery codes."
                 : "Enter the 6-digit code from your authenticator app."}
@@ -151,6 +176,7 @@ export function LoginForm() {
           key={isBackupCodeMode ? "backup" : "totp"}
           label={isBackupCodeMode ? "Recovery code" : "Verification code"}
           type="text"
+          size="sm"
           inputMode={isBackupCodeMode ? "text" : "numeric"}
           autoComplete="one-time-code"
           placeholder={isBackupCodeMode ? "7A9B-4C2D" : "123456"}
@@ -158,7 +184,7 @@ export function LoginForm() {
           autoFocus
           fullWidth
           className={AUTOFILL_FIX}
-          leftIcon={<KeyRound className="size-4" />}
+          leftIcon={<KeyRound className="size-3.5" />}
           hasError={!!errors2FA.twoFactorCode}
           error={errors2FA.twoFactorCode?.message}
           {...register2FA("twoFactorCode")}
@@ -168,7 +194,7 @@ export function LoginForm() {
           <Button
             type="submit"
             variant="primary"
-            size="lg"
+            size="md"
             fullWidth
             isLoading={loading}
             rightIcon={<ArrowRight className="size-4" />}
@@ -208,34 +234,38 @@ export function LoginForm() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-1">
-        <Typography variant="h4" weight="bold" className="tracking-tight text-[var(--gy-text)]">
+    <div className="space-y-2.5 sm:space-y-3">
+      <div className="space-y-0.5">
+        <Typography variant="h4" weight="bold" className="text-base sm:text-lg tracking-tight text-[var(--gy-text)]">
           Welcome back
         </Typography>
-        <Typography variant="p" className="text-sm text-[var(--gy-text-secondary)]">
-          Sign in to your Samantrix Control Center.
+        <Typography variant="p" className="text-xs text-[var(--gy-text-secondary)]">
+          Sign in to your Simantrix Control Center.
         </Typography>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-2">
         <Button
           type="button"
           variant="glass"
-          size="md"
+          size="sm"
           fullWidth
           leftIcon={<GoogleIcon />}
-          onClick={() => alert("Redirecting to Google Workspace SSO gateway...")}
+          isLoading={oauthLoading === "google"}
+          disabled={loading || oauthLoading !== null}
+          onClick={() => handleOAuthSignIn("google")}
         >
           Google
         </Button>
         <Button
           type="button"
           variant="glass"
-          size="md"
+          size="sm"
           fullWidth
           leftIcon={<MicrosoftIcon />}
-          onClick={() => alert("Redirecting to Microsoft 365 / Entra ID SSO gateway...")}
+          isLoading={oauthLoading === "microsoft"}
+          disabled={loading || oauthLoading !== null}
+          onClick={() => handleOAuthSignIn("microsoft")}
         >
           Microsoft
         </Button>
@@ -243,17 +273,18 @@ export function LoginForm() {
 
       <Divider label="or continue with email" />
 
-      <form onSubmit={handleLoginSubmit(handleLogin)} className="space-y-4" noValidate>
+      <form onSubmit={handleLoginSubmit(handleLogin)} className="space-y-2 sm:space-y-2.5" noValidate>
         {errorBanner}
 
         <Input
           label="Work email"
           type="email"
+          size="sm"
           autoComplete="email"
           placeholder="you@company.com"
           fullWidth
           className={AUTOFILL_FIX}
-          leftIcon={<Mail className="size-4" />}
+          leftIcon={<Mail className="size-3.5" />}
           hasError={!!loginErrors.email}
           error={loginErrors.email?.message}
           {...registerLogin("email")}
@@ -262,19 +293,20 @@ export function LoginForm() {
         <Input
           label="Password"
           type={showPassword ? "text" : "password"}
+          size="sm"
           autoComplete="current-password"
           placeholder="Enter your password"
           fullWidth
           className={AUTOFILL_FIX}
-          leftIcon={<Lock className="size-4" />}
-          rightIcon={showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          leftIcon={<Lock className="size-3.5" />}
+          rightIcon={showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
           onRightIconClick={() => setShowPassword(!showPassword)}
           hasError={!!loginErrors.password}
           error={loginErrors.password?.message}
           {...registerLogin("password")}
         />
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between pt-0.5">
           <Checkbox
             size="sm"
             checked={rememberWorkstation}
@@ -294,7 +326,7 @@ export function LoginForm() {
         <Button
           type="submit"
           variant="primary"
-          size="lg"
+          size="md"
           fullWidth
           isLoading={loading}
           rightIcon={<ArrowRight className="size-4" />}
@@ -303,13 +335,12 @@ export function LoginForm() {
         </Button>
       </form>
 
-
-      <div className="flex items-center justify-center gap-1.5">
-        <ShieldCheck className="size-3.5 text-[var(--gy-success)]" />
-        <Typography variant="span" className="text-[11px] text-[var(--gy-text-subtle)]">
+      <div className="flex items-center justify-center gap-1.5 pt-0.5">
+        <ShieldCheck className="size-3 text-[var(--gy-success)]" />
+        <Typography variant="span" className="text-[10px] sm:text-[11px] text-[var(--gy-text-subtle)]">
           Secured with TLS 1.3 · SOC2 Type II · ISO 27001
         </Typography>
       </div>
     </div>
   );
-}
+};

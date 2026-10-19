@@ -2,7 +2,7 @@
 export type DeveloperStatus =
   "PENDING_VERIFICATION" | "ACTIVE" | "INACTIVE" | "SUSPENDED";
 
-/** One row of GET /auth/developers */
+/** One row of GET /auth/developers (paginated) */
 export interface DeveloperAccount {
   id: string;
   fullName: string;
@@ -10,10 +10,7 @@ export interface DeveloperAccount {
   phone: string | null;
   platformRole: string;
   status: DeveloperStatus;
-  isEmailVerified: boolean;
-  twoFactorEnabled: boolean;
   createdAt: string;
-  updatedAt: string;
   lastSignInAt: string | null;
   lastDevice: string | null;
   online: boolean;
@@ -25,15 +22,19 @@ export interface DeveloperCounts {
   active: number;
   rejected: number;
   suspended: number;
+  /** Developers with a live session right now */
+  online: number;
 }
 
-/** GET /auth/developers */
-export interface DevelopersResponse {
+/** GET /auth/developers/summary */
+export interface DevelopersSummary {
   counts: DeveloperCounts;
-  developers: DeveloperAccount[];
 }
 
-/** PATCH /auth/developers/:id/approve body */
-export interface ApproveDeveloperRequest {
-  platformRole: string;
+/** PATCH /auth/developers/:id body (send only what changed) */
+export interface UpdateDeveloperRequest {
+  fullName?: string;
+  phone?: string;
+  platformRole?: string;
+  status?: "ACTIVE" | "SUSPENDED";
 }

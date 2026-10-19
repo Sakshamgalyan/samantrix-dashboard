@@ -1,15 +1,15 @@
 "use client";
 
-import { MarketingProvider } from "./context";
-import { MarketingContent } from "./components/marketing-content";
+import { MarketingProvider } from "@/features/marketing-analytics/context";
+import { MarketingContent } from "@/features/marketing-analytics/components/marketing-content";
 
 /** /admin/marketing-analytics: marketing-site traffic, channels, audience and lead conversion. */
-export function MarketingAnalyticsPage() {
+export const MarketingAnalyticsPage = () => {
   return (
     <MarketingProvider>
       <MarketingContent />
     </MarketingProvider>
   );
-}
+};
 
 export default MarketingAnalyticsPage;

@@ -1,17 +1,4 @@
-import type {
-  FeatureDialog,
-  FeatureFlagsAction,
-  FeatureFlagsOverview,
-} from "../types";
-
-export const loadSuccess = (
-  overview: FeatureFlagsOverview,
-): FeatureFlagsAction => ({ type: "LOAD_SUCCESS", payload: overview });
-
-export const loadFailure = (message: string): FeatureFlagsAction => ({
-  type: "LOAD_FAILURE",
-  payload: message,
-});
+import type { FeatureDialog, FeatureFlagsAction } from "@/features/feature-flags/types";
 
 export const setRefreshing = (refreshing: boolean): FeatureFlagsAction => ({
   type: "SET_REFRESHING",

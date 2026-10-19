@@ -1,13 +1,15 @@
 "use client";
 
 import React from "react";
-import { FeatureFlagsProvider } from "./context";
-import { FeatureFlagsContent } from "./components/feature-flags-content";
+import { FeatureFlagsProvider } from "@/features/feature-flags/context";
+import { FeatureFlagsContent } from "@/features/feature-flags/components/feature-flags-content";
 
-export default function FeatureFlagsPage() {
+export const FeatureFlagsPage = () => {
   return (
     <FeatureFlagsProvider>
       <FeatureFlagsContent />
     </FeatureFlagsProvider>
   );
-}
+};
+
+export default FeatureFlagsPage;

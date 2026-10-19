@@ -1,4 +1,5 @@
-import type { AuthMode, AuthAction, SessionConflict, PortalSelection } from "../types";
+import type { AuthAction } from "@/features/auth/types/actions";
+import type { AuthMode, SessionConflict, PortalSelection } from "@/features/auth/types/state";
 
 export const setAuthMode = (mode: AuthMode): AuthAction => ({
   type: "SET_AUTH_MODE",

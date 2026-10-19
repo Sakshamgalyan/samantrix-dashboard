@@ -1,68 +1,117 @@
-# samantrix-dashboard
+# simantrix-dashboard
 
-Internal Operations & Ecosystem Management Console for the **Samantrix Smart Office Suite**. Built with Next.js 16 (App Router), React 19, Tailwind CSS v4, Lucide Icons, and TypeScript.
-
----
-
-## 🌟 Capabilities & Features
-
-### 1. Executive Operations & Telemetry Center
-- **Executive KPIs**: Live visitors, pending demo inquiries, Early 2027 priority waitlist queue, and ecosystem health status.
-- **Visitor Telemetry (`/analytics`)**: Real-time traffic breakdown by country/city, referrer/redirect origins (LinkedIn, Google, HackerNews, X), UTM campaign ROI, and device/browser metrics.
-
-### 2. Inbound Leads & Demo CRM (`/leads`)
-- Centralized inbound management for inquiries, pilot requests, and enterprise quotes.
-- Status filters (`PENDING`, `CONTACTED`, `CONFIRMED`, `ARCHIVED`), search, lead drawer with internal ops notes thread, and CSV export.
-
-### 3. Early 2027 Waitlist Management (`/waitlist`)
-- Prioritized queue of early access registrations with batch onboarding approval.
-- Team size filters (500+ Enterprise, 200-500, 50-200, 10-50, 1-10) and priority scoring.
-
-### 4. Multi-App Ecosystem Management
-- **Backend Console (`/apps/backend`)**: NestJS REST & WebSocket API, LiveKit WebRTC SFU, Redis BullMQ, PostgreSQL Prisma status, and Gmail SMTP transactional relay diagnostic tester.
-- **Virtual Office Web Console (`/apps/frontend`)**: 3D smart office floor plan occupancy, spatial proximity audio streams, live video meeting rooms, and tenant organization spaces.
-- **Marketing Site CMS (`/apps/home`)**: Product catalog management (10 products), pricing tiers, and announcement banner controllers.
-- **Desktop Releases (`/apps/desktop`)**: Electron desktop client builds (Windows, macOS, Linux), installer binaries, and release notes.
-
-### 5. Role-Based Access Control (RBAC) & Security
-- Built-in personas:
-  - `SUPERADMIN` (Full system access, API keys, team management, system settings)
-  - `MANAGER` (Leads CRM, waitlist batch approvals, workspace moderation)
-  - `ANALYST` (Visitor telemetry, conversion funnels, read-only analytics)
-  - `SUPPORT` (Customer inquiries, support notes, floor diagnostics)
-  - `USER` (Observer & Auditor view)
-- **Role Switcher**: On-the-fly persona switcher in the header to preview and test permissions instantly.
-- **Audit Logs (`/audit`)**: Complete audit trail of administrative actions.
+Internal Operations & Ecosystem Management Console for the **Simantrix** digital workplace ecosystem. Built with Next.js 16 (App Router + React 19), Tailwind CSS v4, `@galyan/ui`, `@galyan/theme`, and TypeScript strict mode.
 
 ---
 
-## 🚀 Getting Started
+## 🏛️ 5-Layer Feature Architecture Standard
+
+All dashboard feature modules under `src/features/` strictly follow the unified 5-layer feature architecture pattern:
+
+```
+src/features/<feature>/
+├── common/
+│   └── constants.ts          # Static constants, dropdown options, chips, tabs & default fallbacks
+├── types/
+│   ├── api.ts                # API request/response contracts and DTO types
+│   ├── state.ts              # Local feature state interface
+│   ├── actions.ts            # Reducer action union types
+│   ├── context.ts            # React Context value interface
+│   └── index.ts              # Clean barrel re-exporting all types
+├── context/
+│   ├── action.ts             # Action creators
+│   ├── reducer.ts            # State reducer & initial state
+│   └── index.tsx             # FeatureProvider component & use<Feature> custom hook
+├── components/
+│   ├── <sub-component>.tsx   # Modular presentation components
+│   └── <feature>-content.tsx # Top-level view orchestrator assembling the view
+├── api.ts                    # RTK Query injected endpoints into dashboardApi
+└── page.tsx                  # Clean minimal entrypoint wrapping <FeatureProvider><FeatureContent /></FeatureProvider>
+```
+
+### State Management Separation
+- **Server Cache & Synchronization**: Handled via Redux Toolkit (RTK) Query (`api.ts`), featuring automatic cache invalidation, polling, and tag-based refetching.
+- **Client & Interaction State**: Handled via local React Context and Reducer (`context/`), decoupling UI state (filters, search, modals, active tabs, form drafts) from global stores.
+
+---
+
+## 📦 Segregated Feature Modules
+
+| Feature Module | Route | Description |
+| :--- | :--- | :--- |
+| **`subscription`** | `/organization/subscription` | Current tier overview, plan comparison catalog, cycle toggle, and checkout modal |
+| **`billing`** | `/organization/billing` | Invoices table, settled payment ledger, receipt downloads, and status chips |
+| **`audit-logs`** | `/organization/audit-logs` | Comprehensive security and administrative trail with actor, action, and target filtering |
+| **`features`** | `/organization/features` | Entitled platform modules, AI agents, spatial audio, and automation switches |
+| **`notifications`** | `/organization/notifications` | Multi-category notification stream (Unread, All, System, Security) with instant read markers |
+| **`integrations`** | `/organization/integrations` | Organization API key lifecycle (generate, copy secret, revoke) and ecosystem integrations |
+| **`analytics`** | `/organization/analytics` | Tenant utilization KPIs, member storage breakdown, feature adoption ratio, and audit trail |
+| **`revenue`** | `/admin/revenue` | Superadmin financial telemetry: MRR, ARR, ARPA, collections trend, plan mix, and top customers |
+| **`overview`** | `/organization` & `/admin` | Workspace intelligence: live room presence via LiveKit/Socket.IO, headcount bar charts, and member roster |
+| **`settings`** | `/organization/settings` | Legal entity profile, company metadata, timezone/locale defaults, and danger zone |
+| **`security`** | `/organization/security` | Personal 2FA (TOTP authenticator setup & recovery codes) and tenant-wide security policies |
+
+---
+
+## 🌟 Ecosystem Capabilities
+
+### 1. Dual-Scope Console
+- **Workspace Scope (`/organization/*`)**: Tenant-specific management covering team members, live room presence, seat allocations, billing, security, and integrations.
+- **Admin Scope (`/admin/*`)**: Platform-level superadmin management covering organization health, system revenue analytics, ecosystem application health, and audit logs.
+
+### 2. Real-Time Telemetry & Presence
+- Direct integration with the Simantrix real-time gateway via Socket.IO for live participant presence (`ONLINE`, `BUSY`, `IN_MEETING`, `AWAY`, `OFFLINE`).
+- WebRTC SFU room telemetry via LiveKit.
+
+### 3. Design System Integration
+- Standardized UI components and tokens powered by `@galyan/ui` and `@galyan/theme`.
+- Modern aesthetics featuring dark glassmorphism, responsive cards, semantic chips, and accessible forms.
+
+### 4. Role Taxonomy & Dynamic Color Schemes
+The dashboard dynamically synchronizes the active authenticated session role with `@galyan/theme` tokens, adapting the interface accent and ambient color scheme:
+
+| Color Scheme | Accent | Target Roles & Permissions |
+| :--- | :--- | :--- |
+| **Simantrix** *(Default)* | Signature Violet `#7c5cff` | `simantrix` default fallback identity |
+| **Coral** | Rose `#f43f5e` | `OWNER` / `org-owner` (Full tenant ownership, billing & account deletion) and `SUPERADMIN` (Platform root) |
+| **Green** | Emerald Green `#10b981` | `MEMBER` / `org-member` (Workspace participant), `developer-member` |
+| **Blue** | Cobalt Blue `#3b82f6` | `MANAGER` / `org-manager` (Workspace operations) and `developer-manager` |
+| **Violet** | Platform Indigo `#6366f1` | `DEVELOPER`, `organization` / `org` corporate tier |
+| **Amber** | Governance Amber `#f59e0b` | `ADMIN` / `org-admin` (Full administration **except** account deletion and subscription plans) |
+| **Cyan** | Sky Blue `#0ea5e9` | `VIEWER` / `org-viewer` (Read-only observation), `AUDITOR`, and `USER` |
+
+---
+
+## 🚀 Development & Commands
+
+Run all package commands with `pnpm`:
 
 ```bash
 # Install dependencies
-npm install
+pnpm install
 
-# Start development server
-npm run dev
+# Start development server on port 4100
+pnpm dev
 
-# Typecheck
-npx tsc --noEmit
+# TypeScript strict mode verification
+pnpm exec tsc --noEmit
 
 # Lint check
-npm run lint
+pnpm lint
 
 # Production build
-npm run build
+pnpm build
 ```
 
 ---
 
-## 📦 Monorepo Architecture
+## 🌐 Simantrix Port Standards
 
-| Project | Port / Protocol | Purpose |
+| Application | Port | Framework / Tech |
 | :--- | :--- | :--- |
-| `samantrix-home` | `http://localhost:3000` | Marketing website & BFF Reverse Proxy |
-| `samantrix-frontend` | `http://localhost:3001` | 3D Smart Office Web Client |
-| `samantrix-backend` | `http://localhost:4000` | NestJS Core API, WebSockets & LiveKit |
-| `samantrix-app` | `samantrix://` | Native Electron Desktop Client |
-| `samantrix-dashboard` | `http://localhost:3002` | Internal Team Operations & Ecosystem Console |
+| **simantrix-backend** | `5000` | NestJS 11 + Prisma 7.9 + PostgreSQL + Socket.IO |
+| **simantrix-home** | `4000` | Next.js 16 + React 19 + Redux Toolkit |
+| **simantrix-dashboard** | `4100` | Next.js 16 + React 19 + RTK Query + `@galyan/ui` |
+| **simantrix-frontend** | `4200` | Next.js 16 + Three.js + Zustand + LiveKit |
+| **simantrix-app** | Native | Electron 43 + Vite |
+| **Storybook** | `6006` | Shared Design System (`galyan`) |

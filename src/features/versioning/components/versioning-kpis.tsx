@@ -1,57 +1,56 @@
 "use client";
 
-import { KpiCard } from "@/components/admin";
-import { formatNumber } from "@/lib/format";
-import { Boxes, CalendarClock, Gauge, Undo2 } from "lucide-react";
-import { APP_META } from "../common/constants";
-import { useVersioningContext } from "../context";
-import { RELEASE_APPS } from "../types";
+import React from "react";
+import { KpiCard } from "@/components/layout/common/kpi-card";
+import { formatNumber } from "@/utils/format";
+import { CalendarClock, CheckCircle2, Gauge, Laptop, Undo2 } from "lucide-react";
+import { useVersioningContext } from "@/features/versioning/context";
 
-export function VersioningKpis() {
+export const VersioningKpis = () => {
   const { summary } = useVersioningContext();
   if (!summary) return null;
 
-  const rolling = summary.rollingOut;
-  const rollingCaption =
-    rolling.length === 0
-      ? "no staged rollouts"
-      : rolling
-          .slice(0, 2)
-          .map(
-            (r) => `${APP_META[r.app].label} ${r.version} · ${r.rolloutPercent}%`,
-          )
-          .join(", ") + (rolling.length > 2 ? ` +${rolling.length - 2}` : "");
+  const desktopCount = summary.byApp?.DESKTOP ?? 0;
+  const stableRelease = summary.current.find(
+    (r) => r.app === "DESKTOP" && r.channel === "STABLE",
+  );
+  const desktopRolling = summary.rollingOut.filter((r) => r.app === "DESKTOP");
+  const activeRollout = desktopRolling[0];
+
+  const rollingCaption = activeRollout
+    ? `v${activeRollout.version} · ${activeRollout.channel} channel`
+    : "no active desktop rollouts";
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       <KpiCard
-        label="Apps with a live release"
-        value={summary.appsLive}
-        caption={`of ${RELEASE_APPS.length} Samantrix apps`}
-        icon={<Boxes className="size-4" />}
+        label="Production Stable Release"
+        value={stableRelease ? `v${stableRelease.version}` : "None Live"}
+        caption={stableRelease ? "Desktop Live Channel · 100% rollout" : "no live desktop release"}
+        icon={<Laptop className="size-4" />}
         tone="success"
       />
       <KpiCard
-        label="Rolling out now"
-        value={summary.counts.ROLLING_OUT}
+        label="Active Canary Rollout"
+        value={activeRollout ? `${activeRollout.rolloutPercent}%` : "0%"}
         caption={rollingCaption}
         icon={<Gauge className="size-4" />}
         tone="warning"
       />
       <KpiCard
-        label="Releases in 30 days"
+        label="Deployed (Last 30 Days)"
         value={summary.releasedLast30Days}
-        caption={`shipped · ${formatNumber(summary.createdLast30Days)} created`}
+        caption={`shipped · ${formatNumber(summary.createdLast30Days)} drafts staged`}
         icon={<CalendarClock className="size-4" />}
         tone="primary"
       />
       <KpiCard
-        label="Rolled back"
+        label="Rolled Back / Downgraded"
         value={summary.counts.ROLLED_BACK}
-        caption={`of ${formatNumber(summary.counts.total)} releases tracked`}
+        caption={`of ${formatNumber(desktopCount)} desktop versions tracked`}
         icon={<Undo2 className="size-4" />}
         tone="danger"
       />
     </div>
   );
-}
+};

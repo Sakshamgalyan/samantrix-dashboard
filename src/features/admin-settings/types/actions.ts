@@ -1,10 +1,7 @@
-import type { PlatformSetting, PlatformSettingsResponse } from "./api";
-import type { CategoryTab } from "./state";
+import type { PlatformSetting } from "@/features/admin-settings/types/api";
+import type { CategoryTab } from "@/features/admin-settings/types/state";
 
 export type SettingsAction =
-  | { type: "LOAD_START"; payload: { background: boolean } }
-  | { type: "LOAD_SUCCESS"; payload: { data: PlatformSettingsResponse; at: string } }
-  | { type: "LOAD_FAILURE"; payload: string }
   | { type: "SET_ACTIVE_TAB"; payload: CategoryTab }
   | { type: "SET_DRAFT"; payload: { key: string; value: string } }
   | { type: "CLEAR_DRAFT"; payload: string }

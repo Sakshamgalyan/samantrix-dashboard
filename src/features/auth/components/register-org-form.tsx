@@ -1,10 +1,41 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuthPageContext } from "../context";
-import { orgRegistrationSchema, type OrgRegistrationFormValues } from "../types";
+import { zodResolver } from "@/lib/form-resolver";
+import { api } from "@/lib/api-client/apiClient";
+import { useAuthPageContext } from "@/features/auth/context";
+import { orgRegistrationSchema, type OrgRegistrationFormValues } from "@/features/auth/types/forms";
+
+const GoogleIcon = () => (
+  <svg className="size-4 shrink-0" viewBox="0 0 24 24" aria-hidden>
+    <path
+      fill="#4285F4"
+      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+    />
+    <path
+      fill="#34A853"
+      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+    />
+    <path
+      fill="#FBBC05"
+      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+    />
+    <path
+      fill="#EA4335"
+      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+    />
+  </svg>
+);
+
+const MicrosoftIcon = () => (
+  <svg className="size-4 shrink-0" viewBox="0 0 23 23" aria-hidden>
+    <path fill="#f35325" d="M1 1h10v10H1z" />
+    <path fill="#81bc06" d="M12 1h10v10H12z" />
+    <path fill="#05a6f0" d="M1 12h10v10H1z" />
+    <path fill="#ffba08" d="M12 12h10v10H12z" />
+  </svg>
+);
 import {
   INITIAL_ORG_FORM,
   ORG_TYPE_OPTIONS,
@@ -12,8 +43,8 @@ import {
   COMPANY_SIZE_OPTIONS,
   COUNTRY_OPTIONS,
   STEP_DEFINITIONS,
-} from "../common/constants";
-import { AUTOFILL_FIX } from "../common/styles";
+} from "@/features/auth/common/constants";
+import { AUTOFILL_FIX } from "@/features/auth/common/styles";
 import {
   Banner,
   Button,
@@ -52,7 +83,7 @@ const STEP_TITLES: Record<number, string> = {
   4: "Review & confirm",
 };
 
-export function RegisterOrgForm() {
+export const RegisterOrgForm = () => {
   const {
     step,
     setStep,
@@ -92,6 +123,31 @@ export function RegisterOrgForm() {
   const email = useWatch({ control, name: "email" });
   const termsAccepted = useWatch({ control, name: "termsAccepted" });
   const privacyAccepted = useWatch({ control, name: "privacyAccepted" });
+
+  const [oauthLoading, setOauthLoading] = useState<"google" | "microsoft" | null>(null);
+
+  const handleOAuthRegister = async (provider: "google" | "microsoft") => {
+    try {
+      setOauthLoading(provider);
+      setError(null);
+      const orgName = getValues("organizationName");
+      const res = await api.get<{ url: string }>(`/auth/oauth/${provider}/url`, {
+        params: {
+          app: "dashboard",
+          redirectUri: `${window.location.origin}/auth/callback`,
+          state: orgName ? JSON.stringify({ organizationName: orgName }) : undefined,
+        },
+      });
+      if (res?.url) {
+        window.location.href = res.url;
+      } else {
+        throw new Error(`Failed to retrieve SSO redirect URL for ${provider}`);
+      }
+    } catch (err) {
+      setOauthLoading(null);
+      setError(err instanceof Error ? err.message : "Failed to initiate single sign-on.");
+    }
+  };
 
   const copySecret = () => {
     if (!twoFactorSecret) return;
@@ -194,7 +250,7 @@ export function RegisterOrgForm() {
   const tenantSlug = (organizationName || "your-org").toLowerCase().replace(/[^a-z0-9]/g, "-");
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       <Stepper
         steps={stepperSteps}
         activeStep={step - 1}
@@ -208,7 +264,7 @@ export function RegisterOrgForm() {
         }}
       />
 
-      <Typography variant="h4" weight="bold" className="tracking-tight text-[var(--gy-text)]">
+      <Typography variant="h5" weight="bold" className="text-base sm:text-lg tracking-tight text-[var(--gy-text)]">
         {STEP_TITLES[step]}
       </Typography>
 
@@ -223,16 +279,53 @@ export function RegisterOrgForm() {
         />
       )}
 
-      <form onSubmit={onSubmitByStep[step]} noValidate className="space-y-4">
+      <form onSubmit={onSubmitByStep[step]} noValidate className="space-y-2.5">
         <div
           key={step}
-          className="space-y-4 transition-all duration-300 ease-out starting:opacity-0 starting:translate-x-3"
+          className="space-y-2.5 transition-all duration-300 ease-out starting:opacity-0 starting:translate-x-3"
         >
           {step === 1 && (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    type="button"
+                    variant="glass"
+                    size="sm"
+                    fullWidth
+                    leftIcon={<GoogleIcon />}
+                    isLoading={oauthLoading === "google"}
+                    disabled={oauthLoading !== null}
+                    onClick={() => handleOAuthRegister("google")}
+                  >
+                    Google Workspace
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="glass"
+                    size="sm"
+                    fullWidth
+                    leftIcon={<MicrosoftIcon />}
+                    isLoading={oauthLoading === "microsoft"}
+                    disabled={oauthLoading !== null}
+                    onClick={() => handleOAuthRegister("microsoft")}
+                  >
+                    Microsoft 365
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 my-0.5">
+                  <span className="h-px flex-1 bg-[var(--gy-divider)]" />
+                  <Typography variant="span" className="text-[10px] uppercase tracking-wider text-[var(--gy-text-subtle)]">
+                    or enter organization details
+                  </Typography>
+                  <span className="h-px flex-1 bg-[var(--gy-divider)]" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
                 <Input
                   label="Organization name"
+                  size="sm"
                   required
                   autoFocus
                   placeholder="Hyperion Global"
@@ -245,35 +338,33 @@ export function RegisterOrgForm() {
                 />
                 <Input
                   label="Legal entity name"
+                  size="sm"
                   placeholder="Optional"
                   fullWidth
                   className={AUTOFILL_FIX}
                   {...register("legalName")}
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <Controller
                   control={control}
                   name="orgType"
                   render={({ field }) => (
-                    <Dropdown
-                      variant="glass" label="Organization type" options={ORG_TYPE_OPTIONS} value={field.value} onChange={field.onChange} />
+                    <Dropdown label="Organization type" size="sm" options={ORG_TYPE_OPTIONS} value={field.value} onChange={field.onChange} />
                   )}
                 />
                 <Controller
                   control={control}
                   name="industry"
                   render={({ field }) => (
-                    <Dropdown
-                      variant="glass" label="Industry" options={INDUSTRY_OPTIONS} value={field.value} onChange={field.onChange} />
+                    <Dropdown label="Industry" size="sm" options={INDUSTRY_OPTIONS} value={field.value} onChange={field.onChange} />
                   )}
                 />
                 <Controller
                   control={control}
                   name="companySize"
                   render={({ field }) => (
-                    <Dropdown
-                      variant="glass" label="Company size" options={COMPANY_SIZE_OPTIONS} value={field.value} onChange={field.onChange} />
+                    <Dropdown label="Company size" size="sm" options={COMPANY_SIZE_OPTIONS} value={field.value} onChange={field.onChange} />
                   )}
                 />
                 <Controller
@@ -281,8 +372,8 @@ export function RegisterOrgForm() {
                   name="country"
                   render={({ field }) => (
                     <Dropdown
-                      variant="glass"
                       label="Country"
+                      size="sm"
                       options={COUNTRY_OPTIONS}
                       value={field.value}
                       onChange={field.onChange}
@@ -297,9 +388,10 @@ export function RegisterOrgForm() {
 
           {step === 2 && (
             <>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2.5">
                 <Input
                   label="First name"
+                  size="sm"
                   required
                   autoFocus
                   autoComplete="given-name"
@@ -313,6 +405,7 @@ export function RegisterOrgForm() {
                 />
                 <Input
                   label="Last name"
+                  size="sm"
                   required
                   autoComplete="family-name"
                   placeholder="Vance"
@@ -323,9 +416,10 @@ export function RegisterOrgForm() {
                   {...register("lastName")}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-2.5">
                 <Input
                   label="Work email"
+                  size="sm"
                   required
                   type="email"
                   autoComplete="email"
@@ -339,6 +433,7 @@ export function RegisterOrgForm() {
                 />
                 <Input
                   label="Phone"
+                  size="sm"
                   type="tel"
                   autoComplete="tel"
                   placeholder="Optional"
@@ -348,9 +443,10 @@ export function RegisterOrgForm() {
                   {...register("mobilePhone")}
                 />
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <Input
                   label="Password"
+                  size="sm"
                   required
                   type={showPassword ? "text" : "password"}
                   autoComplete="new-password"
@@ -366,6 +462,7 @@ export function RegisterOrgForm() {
                 />
                 <Input
                   label="Confirm password"
+                  size="sm"
                   required
                   type={showConfirmPassword ? "text" : "password"}
                   autoComplete="new-password"
@@ -484,7 +581,7 @@ export function RegisterOrgForm() {
                   size="sm"
                   checked={!!termsAccepted}
                   onChange={(e) => setValue("termsAccepted", e.target.checked, { shouldValidate: true })}
-                  label="I agree to the Samantrix Master Services Agreement"
+                  label="I agree to the Simantrix Master Services Agreement"
                   color={errors.termsAccepted ? "error" : "primary"}
                 />
                 <Checkbox
@@ -499,12 +596,12 @@ export function RegisterOrgForm() {
           )}
         </div>
 
-        <div className="flex items-center gap-3 pt-1">
+        <div className="flex items-center gap-2.5 pt-0.5">
           {step > 1 && (
             <Button
               type="button"
               variant="ghost"
-              size="lg"
+              size="md"
               leftIcon={<ArrowLeft className="size-4" />}
               onClick={handlePrev}
             >
@@ -514,7 +611,7 @@ export function RegisterOrgForm() {
           <Button
             type="submit"
             variant={step === TOTAL_STEPS ? "success" : "primary"}
-            size="lg"
+            size="md"
             fullWidth
             isLoading={step === TOTAL_STEPS && loading}
             rightIcon={step === TOTAL_STEPS ? <Rocket className="size-4" /> : <ArrowRight className="size-4" />}
@@ -525,4 +622,4 @@ export function RegisterOrgForm() {
       </form>
     </div>
   );
-}
+};

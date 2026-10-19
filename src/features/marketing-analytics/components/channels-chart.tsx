@@ -3,12 +3,13 @@
 import { useMemo } from "react";
 import { BarChart } from "@galyan/ui";
 import { Share2 } from "lucide-react";
-import { GlassSection, SectionEmpty } from "@/components/admin";
-import { useMarketingContext } from "../context";
-import { CHART_COLORS } from "../common/constants";
+import { GlassSection } from "@/components/layout/common/glass-section";
+import { SectionEmpty } from "@/components/layout/common/states";
+import { useMarketingContext } from "@/features/marketing-analytics/context";
+import { CHART_COLORS } from "@/features/marketing-analytics/common/constants";
 
 /** Visits by acquisition channel (UTM source, else referrer). */
-export function ChannelsChart({ className }: { className?: string }) {
+export const ChannelsChart = ({ className }: { className?: string }) => {
   const { state } = useMarketingContext();
   const channels = state.report?.channels;
 
@@ -35,10 +36,10 @@ export function ChannelsChart({ className }: { className?: string }) {
           description="Direct, search, social and campaign traffic appear once visits are tracked."
         />
       ) : (
-        <div className="h-[290px] w-full">
-          <BarChart variant="filled" data={data} height={290} showValues />
+        <div className="h-[240px] w-full min-w-0">
+          <BarChart variant="filled" data={data} height={240} showValues />
         </div>
       )}
     </GlassSection>
   );
-}
+};

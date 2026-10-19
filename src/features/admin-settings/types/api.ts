@@ -22,7 +22,6 @@ export interface PlatformSetting {
   defaultValue: SettingValue | null;
   min: number | null;
   max: number | null;
-  createdAt: string | null;
   updatedAt: string | null;
 }
 

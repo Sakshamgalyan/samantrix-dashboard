@@ -1,60 +1,69 @@
 "use client";
 
 import React from "react";
-import { useNavigate } from "react-router-dom";
-import { Button, Chip, Tooltip, Typography } from "@galyan/ui";
-import { Bell, CheckCircle2, Shield } from "lucide-react";
-import { useAuth } from "@/src/lib/auth-context";
+import { useRouter } from "next/navigation";
+import {
+  Avatar,
+  Badge,
+  Chip,
+  Menu,
+  Typography,
+  type MenuItem,
+} from "@galyan/ui";
+import {
+  ArrowRight,
+  Bell,
+  CheckCircle2,
+  Shield,
+} from "lucide-react";
+import { useAuth } from "@/features/auth";
+import { useConsoleScope } from "@/components/layout/scope-context";
 
-export function Notifications() {
-  const navigate = useNavigate();
+export const Notifications: React.FC = () => {
+  const router = useRouter();
+  const scope = useConsoleScope();
   const { user, organization } = useAuth();
   const orgName =
     organization?.name || user?.organization?.name || "Your organization";
   const needs2FA = !user?.twoFactorEnabled;
 
-  return (
-    <Tooltip
-      trigger="click"
-      position="bottom"
-      maxWidth={320}
-      hasArrow={false}
-      content={
-        <div className="w-72 space-y-3 py-1 text-left">
-          <div className="flex items-center justify-between">
-            <Typography
-              variant="span"
-              weight="semibold"
-              className="text-sm text-[var(--gy-text)]"
-            >
-              Notifications
-            </Typography>
-            <Chip size="sm" variant="soft">
-              Live
-            </Chip>
-          </div>
-          <div className="flex items-start gap-2.5">
-            <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--gy-success)]" />
-            <div>
-              <Typography
-                variant="span"
-                weight="medium"
-                className="block text-xs text-[var(--gy-text)]"
-              >
-                Workspace provisioned
-              </Typography>
-              <Typography
-                variant="span"
-                className="block text-xs text-[var(--gy-text-secondary)]"
-              >
-                {orgName} floor plan and roles are active.
-              </Typography>
-            </div>
-          </div>
-          {needs2FA && (
-            <div className="flex items-start gap-2.5">
-              <Shield className="mt-0.5 size-4 shrink-0 text-[var(--gy-warning)]" />
-              <div className="space-y-1">
+  const items: MenuItem[] = [
+    {
+      id: "workspace",
+      icon: (
+        <span className="mt-0.5 flex shrink-0 text-emerald-500">
+          <CheckCircle2 className="size-4" />
+        </span>
+      ),
+      label: (
+        <div className="flex flex-col gap-0.5 text-left">
+          <Typography
+            variant="span"
+            weight="medium"
+            className="block text-xs text-[var(--gy-text)]"
+          >
+            Workspace provisioned
+          </Typography>
+          <Typography
+            variant="span"
+            className="block text-xs text-[var(--gy-text-secondary)]"
+          >
+            {orgName} floor plan and roles are active.
+          </Typography>
+        </div>
+      ),
+    },
+    ...(needs2FA
+      ? [
+          {
+            id: "security",
+            icon: (
+              <span className="mt-0.5 flex shrink-0 text-amber-500">
+                <Shield className="size-4" />
+              </span>
+            ),
+            label: (
+              <div className="flex flex-col gap-0.5 text-left">
                 <Typography
                   variant="span"
                   weight="medium"
@@ -68,30 +77,81 @@ export function Notifications() {
                 >
                   Secure your organization with an authenticator app.
                 </Typography>
-                <Button
-                  variant="link"
-                  size="xs"
-                  onClick={() => navigate("/security")}
-                >
-                  Configure now
-                </Button>
               </div>
-            </div>
-          )}
+            ),
+          },
+        ]
+      : []),
+    { id: "divider", label: "", divider: true },
+    {
+      id: "show-all",
+      icon: (
+        <span className="flex shrink-0 text-[var(--gy-primary)]">
+          <ArrowRight className="size-4" />
+        </span>
+      ),
+      label: (
+        <span className="text-xs font-semibold text-[var(--gy-primary)]">
+          Show all alerts
+        </span>
+      ),
+    },
+  ];
+
+  const onSelect = (id: string) => {
+    if (id === "show-all") {
+      router.push(scope === "admin" ? "/admin/notifications" : "/organization/notifications");
+    } else if (id === "security") {
+      router.push("/organization/security");
+    } else if (id === "workspace") {
+      router.push(scope === "admin" ? "/admin" : "/organization");
+    }
+  };
+
+  return (
+    <Menu
+      trigger={
+        <Badge
+          dot
+          variant="primary"
+          ping={needs2FA}
+          invisible={!needs2FA}
+          placement="top-right"
+          className="cursor-pointer"
+        >
+          <Avatar
+            fallback={<Bell className="size-4 text-[var(--gy-text)]" />}
+            size="md"
+            variant="default"
+            glow={needs2FA}
+            interactive
+            aria-label="Notifications"
+          />
+        </Badge>
+      }
+      placement="bottom-end"
+      width={320}
+      size="sm"
+      variant="bordered"
+      className="shadow-2xl !max-w-[calc(100vw-24px)] overflow-hidden"
+      items={items}
+      onItemClick={onSelect}
+      header={
+        <div className="flex items-center justify-between pb-1 text-left">
+          <Typography
+            variant="span"
+            weight="semibold"
+            className="text-sm text-[var(--gy-text)]"
+          >
+            Notifications
+          </Typography>
+          <Chip size="sm" variant={needs2FA ? "warning" : "soft"}>
+            {needs2FA ? "Action required" : "Live"}
+          </Chip>
         </div>
       }
-    >
-      <span className="relative inline-flex">
-        <Button
-          variant="ghost"
-          size="sm"
-          aria-label="Notifications"
-          leftIcon={<Bell className="size-4" />}
-        />
-        {needs2FA && (
-          <span className="pointer-events-none absolute right-1.5 top-1.5 size-2 rounded-full bg-[var(--gy-primary)] ring-2 ring-[var(--gy-surface)]" />
-        )}
-      </span>
-    </Tooltip>
+    />
   );
-}
+};
+
+export default Notifications;

@@ -1,11 +1,13 @@
 "use client";
 
-import { Chip } from "@galyan/ui";
+import React from "react";
+import { Chip, Typography } from "@galyan/ui";
 import { SlidersHorizontal } from "lucide-react";
-import { GlassSection, SectionEmpty } from "@/components/admin";
-import type { PlatformSetting, SettingCategory } from "../types";
-import { CATEGORY_META } from "../common/constants";
-import { SettingRow } from "./setting-row";
+import { GlassSection } from "@/components/layout/common/glass-section";
+import { SectionEmpty } from "@/components/layout/common/states";
+import type { PlatformSetting, SettingCategory } from "@/features/admin-settings/types/api";
+import { CATEGORY_META } from "@/features/admin-settings/common/constants";
+import { SettingRow } from "@/features/admin-settings/components/setting-row";
 
 interface SettingsCategorySectionProps {
   category: SettingCategory;
@@ -13,10 +15,10 @@ interface SettingsCategorySectionProps {
 }
 
 /** Glass section listing every setting of one category. */
-export function SettingsCategorySection({
+export const SettingsCategorySection = ({
   category,
   settings,
-}: SettingsCategorySectionProps) {
+}: SettingsCategorySectionProps) => {
   const meta = CATEGORY_META[category];
   const customised = settings.filter((s) => !s.isDefault).length;
 
@@ -27,9 +29,9 @@ export function SettingsCategorySection({
       aside={
         settings.length > 0 && (
           <Chip size="sm" variant="neutral">
-            <span className="whitespace-nowrap">
+            <Typography variant="small" textColor="var(--gy-text-secondary)" className="whitespace-nowrap text-xs">
               {customised} of {settings.length} stored
-            </span>
+            </Typography>
           </Chip>
         )
       }
@@ -49,4 +51,5 @@ export function SettingsCategorySection({
       )}
     </GlassSection>
   );
-}
+};
+

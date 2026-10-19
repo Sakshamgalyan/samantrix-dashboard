@@ -1,13 +1,15 @@
 "use client";
 
-import { OrganizationsProvider } from "./context";
-import { OrganizationsContent } from "./components/organizations-content";
+import { OrganizationsProvider } from "@/features/organizations/context";
+import { OrganizationsContent } from "@/features/organizations/components/organizations-content";
 
 /** Platform admin: every tenant organization (route `admin/organizations`). */
-export default function AdminOrganizationsPage() {
+const AdminOrganizationsPage = () => {
   return (
     <OrganizationsProvider>
       <OrganizationsContent />
     </OrganizationsProvider>
   );
-}
+};
+
+export default AdminOrganizationsPage;

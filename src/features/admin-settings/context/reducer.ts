@@ -1,12 +1,8 @@
-import type { SettingsAction, SettingsPageState } from "../types";
+import type { SettingsAction } from "@/features/admin-settings/types/actions";
+import type { SettingsUiState } from "@/features/admin-settings/types/state";
 
-export const initialSettingsState: SettingsPageState = {
-  data: null,
-  loading: true,
-  refreshing: false,
-  loadError: null,
-  refreshError: null,
-  fetchedAt: null,
+/** UI state only; the settings themselves live in the RTK Query cache. */
+export const initialSettingsState: SettingsUiState = {
   activeTab: "ALL",
   drafts: {},
   savingKeys: [],
@@ -18,32 +14,11 @@ export const initialSettingsState: SettingsPageState = {
   deleting: false,
 };
 
-export function settingsReducer(
-  state: SettingsPageState,
+export const settingsReducer = (
+  state: SettingsUiState,
   action: SettingsAction,
-): SettingsPageState {
+): SettingsUiState => {
   switch (action.type) {
-    case "LOAD_START":
-      return action.payload.background
-        ? { ...state, refreshing: true }
-        : { ...state, loading: state.data === null, refreshing: true, loadError: null };
-
-    case "LOAD_SUCCESS":
-      return {
-        ...state,
-        data: action.payload.data,
-        fetchedAt: action.payload.at,
-        loading: false,
-        refreshing: false,
-        loadError: null,
-        refreshError: null,
-      };
-
-    case "LOAD_FAILURE":
-      return state.data
-        ? { ...state, refreshing: false, loading: false, refreshError: action.payload }
-        : { ...state, refreshing: false, loading: false, loadError: action.payload };
-
     case "SET_ACTIVE_TAB":
       return { ...state, activeTab: action.payload };
 
@@ -89,4 +64,4 @@ export function settingsReducer(
     default:
       return state;
   }
-}
+};

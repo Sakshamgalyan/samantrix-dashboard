@@ -1,8 +1,8 @@
 import type React from "react";
-import type { PlatformSetting } from "./api";
-import type { SettingsAction } from "./actions";
-import type { CategoryTab, SettingsPageState } from "./state";
-import type { AddSettingFormValues, EditSettingFormValues } from "./forms";
+import type { PlatformSetting } from "@/features/admin-settings/types/api";
+import type { SettingsAction } from "@/features/admin-settings/types/actions";
+import type { CategoryTab, SettingsPageState } from "@/features/admin-settings/types/state";
+import type { AddSettingFormValues, EditSettingFormValues } from "@/features/admin-settings/types/forms";
 
 export interface SettingsPageContextType {
   state: SettingsPageState;

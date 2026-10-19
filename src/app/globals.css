@@ -14,7 +14,7 @@
   --font-heading: var(--font-unbounded), "Unbounded", var(--gy-font-heading, var(--gy-font-display)), ui-sans-serif, system-ui, sans-serif;
 }
 
-/* Typography & Token bridges for borders and surfaces (the app is Samantrix light only) */
+/* Typography & Token bridges for borders and surfaces (the app is Simantrix light only) */
 :root {
   /* Configure Galyan Theme typography to use DM Sans & Unbounded */
   --gy-font-sans: var(--font-dm-sans), "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -30,6 +30,18 @@
   --gy-text-primary: #0f172a;
   --gy-text-secondary: #475569;
   --gy-text-muted: #94a3b8;
+}
+
+[data-color-mode="dark"] {
+  --gy-bg-primary: #090d16;
+  --gy-bg-secondary: #0f172a;
+  --gy-bg-surface: #1e293b;
+  --gy-border-primary: rgba(255, 255, 255, 0.15);
+  --gy-border-secondary: rgba(255, 255, 255, 0.10);
+  --gy-border-subtle: rgba(255, 255, 255, 0.06);
+  --gy-text-primary: #f8fafc;
+  --gy-text-secondary: #94a3b8;
+  --gy-text-muted: #64748b;
 }
 
 body {

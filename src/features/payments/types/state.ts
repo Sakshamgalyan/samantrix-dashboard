@@ -1,17 +1,28 @@
-import type { BillingOverview } from "./api";
+import type {
+  PaymentFilters,
+  PaymentsConfig,
+  PaymentsListResponse,
+  PaymentsSummary,
+  Plan,
+  SeatFilters,
+  SeatsResponse,
+} from "@/features/payments/types/api";
 
-/** "ALL" or a subscription status (lower-case, as the backend returns it). */
-export type SubscriptionTab = string;
+/** UI-only state kept in the reducer; server data lives in the RTK Query cache. */
+export interface PaymentsUiState {
+  filters: PaymentFilters;
+  seatFilters: SeatFilters;
+}
 
-/** "ALL" or an invoice status (upper-case, as the backend returns it). */
-export type InvoiceTab = string;
-
+/** What components read: the UI state composed with the cached queries. */
 export interface PaymentsPageState {
-  data: BillingOverview | null;
+  summary: PaymentsSummary | null;
+  payments: PaymentsListResponse | null;
+  seats: SeatsResponse | null;
+  plans: Plan[];
+  config: PaymentsConfig | null;
+  filters: PaymentFilters;
+  seatFilters: SeatFilters;
+  loading: boolean;
   error: string | null;
-  refreshing: boolean;
-  subscriptionTab: SubscriptionTab;
-  subscriptionSearch: string;
-  invoiceTab: InvoiceTab;
-  invoiceSearch: string;
 }

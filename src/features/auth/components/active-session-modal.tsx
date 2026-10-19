@@ -2,7 +2,7 @@
 
 import { Banner, Button, Modal, Typography } from "@galyan/ui";
 import { Laptop, MonitorSmartphone, Trash2 } from "lucide-react";
-import { useAuthPageContext } from "../context";
+import { useAuthPageContext } from "@/features/auth/context";
 
 function formatWhen(value: string): string {
   const date = new Date(value);
@@ -15,7 +15,7 @@ function formatWhen(value: string): string {
  * The account is signed in on another device. Lists that session with a delete
  * (sign out) action; once it is gone the sign-in is retried automatically.
  */
-export function ActiveSessionModal() {
+export const ActiveSessionModal = () => {
   const { sessionConflict, handleRevokeBlockingSession, dismissSessionConflict } =
     useAuthPageContext();
 
@@ -23,7 +23,6 @@ export function ActiveSessionModal() {
 
   return (
     <Modal
-      variant="glass"
       isOpen={sessionConflict !== null}
       onClose={busy ? undefined : dismissSessionConflict}
       size="md"
@@ -79,4 +78,4 @@ export function ActiveSessionModal() {
       </div>
     </Modal>
   );
-}
+};

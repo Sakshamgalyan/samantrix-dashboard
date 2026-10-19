@@ -1,14 +1,15 @@
 "use client";
 
 import { useMemo } from "react";
-import { AreaChart, Chip } from "@galyan/ui";
+import { AreaChart, Chip, Typography } from "@galyan/ui";
 import { LineChart as LineChartIcon } from "lucide-react";
-import { GlassSection, SectionEmpty } from "@/components/admin";
-import { formatDay, formatNumber } from "@/lib/format";
-import { useMarketingContext } from "../context";
+import { GlassSection } from "@/components/layout/common/glass-section";
+import { SectionEmpty } from "@/components/layout/common/states";
+import { formatDay, formatNumber } from "@/utils/format";
+import { useMarketingContext } from "@/features/marketing-analytics/context";
 
 /** Daily visits and unique visitors over the selected window. */
-export function TrafficTrend({ className }: { className?: string }) {
+export const TrafficTrend = ({ className }: { className?: string }) => {
   const { state } = useMarketingContext();
   const report = state.report;
 
@@ -32,7 +33,7 @@ export function TrafficTrend({ className }: { className?: string }) {
     <GlassSection
       className={className}
       title="Traffic trend"
-      subtitle={`Daily visits and unique visitors · last ${report.range.days} days (UTC)`}
+      subtitle="Daily page views and unique visitors (UTC)"
       aside={
         peak.visits > 0 ? (
           <Chip size="sm" variant="soft" className="whitespace-nowrap">
@@ -48,11 +49,11 @@ export function TrafficTrend({ className }: { className?: string }) {
           description="Page views tracked on the marketing site will chart here day by day."
         />
       ) : (
-        <div className="h-[290px] w-full">
+        <div className="h-[240px] w-full min-w-0">
           <AreaChart
             data={data}
             xAxisKey="label"
-            height={290}
+            height={240}
             series={[
               { key: "visits", name: "Visits", color: "var(--gy-primary)" },
               {
@@ -65,11 +66,15 @@ export function TrafficTrend({ className }: { className?: string }) {
         </div>
       )}
       {report.truncated && (
-        <p className="mt-3 text-xs text-[var(--gy-text-subtle)]">
+        <Typography
+          variant="small"
+          textColor="var(--gy-text-subtle)"
+          className="mt-2 block text-xs"
+        >
           Very busy period: the daily series uses the most recent 100,000
           visits. Totals are exact.
-        </p>
+        </Typography>
       )}
     </GlassSection>
   );
-}
+};

@@ -1,4 +1,4 @@
-import type { PlatformSetting, SettingCategory } from "../types";
+import type { PlatformSetting, SettingCategory } from "@/features/admin-settings/types/api";
 
 export const CATEGORY_ORDER: SettingCategory[] = [
   "GENERAL",
@@ -13,7 +13,7 @@ export const CATEGORY_META: Record<
 > = {
   GENERAL: {
     label: "General",
-    subtitle: "Branding, support contact and platform-wide switches.",
+    subtitle: "Branding, support contact and global switches.",
   },
   AUTH: {
     label: "Authentication",
@@ -37,16 +37,16 @@ export const CATEGORY_OPTIONS = CATEGORY_ORDER.map((c) => ({
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /** The current value of a non-secret setting as input text. */
-export function valueToText(setting: PlatformSetting): string {
+export const valueToText = (setting: PlatformSetting): string => {
   if (setting.isSecret || setting.value === null) return "";
   return String(setting.value);
-}
+};
 
 /** Client-side mirror of the backend validation; null when the draft is acceptable. */
-export function validateDraft(
+export const validateDraft = (
   setting: PlatformSetting,
   draft: string,
-): string | null {
+): string | null => {
   const value = draft.trim();
   if (setting.isSecret) {
     return value.length > 2000 ? "At most 2000 characters." : null;
@@ -69,21 +69,21 @@ export function validateDraft(
       if (!value) return "Value cannot be empty.";
       return value.length > 2000 ? "At most 2000 characters." : null;
   }
-}
+};
 
 /** True when the draft would actually change the stored value. */
-export function isDirty(
+export const isDirty = (
   setting: PlatformSetting,
   draft: string | undefined,
-): boolean {
+): boolean => {
   if (draft === undefined) return false;
   if (setting.isSecret) return draft.trim().length > 0;
   return draft.trim() !== valueToText(setting);
-}
+};
 
-/** Human text for a default value, e.g. "On", "60", "Samantrix". */
-export function formatValue(setting: PlatformSetting, value: unknown): string {
+/** Human text for a default value, e.g. "On", "60", "Simantrix". */
+export const formatValue = (setting: PlatformSetting, value: unknown): string => {
   if (value === null || value === undefined) return "—";
   if (setting.type === "boolean") return value === true ? "On" : "Off";
   return String(value);
-}
+};

@@ -1,8 +1,8 @@
 import type React from "react";
-import type { LoginPortal } from "../context/auth-context";
-import type { AuthMode, AuthPageState, SessionConflict, PortalSelection } from "./state";
-import type { AuthAction } from "./actions";
-import type { LoginFormValues, TwoFactorFormValues, OrgRegistrationFormValues } from "./forms";
+import type { LoginPortal } from "@/features/auth/context/auth-context";
+import type { AuthMode, AuthPageState, SessionConflict, PortalSelection } from "@/features/auth/types/state";
+import type { AuthAction } from "@/features/auth/types/actions";
+import type { LoginFormValues, TwoFactorFormValues, OrgRegistrationFormValues } from "@/features/auth/types/forms";
 
 export interface AuthPageContextType {
   // Direct state container and raw dispatch

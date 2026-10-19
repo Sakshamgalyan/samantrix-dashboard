@@ -27,6 +27,7 @@ export interface Organization {
   city?: string;
   website?: string;
   businessEmail?: string;
+  secondaryEmail?: string;
   businessPhone?: string;
   address?: string;
   logoUrl?: string;

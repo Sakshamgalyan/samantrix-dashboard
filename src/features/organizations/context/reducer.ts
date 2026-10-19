@@ -1,72 +1,51 @@
-import type { OrganizationsAction, OrganizationsState } from "../types";
+import type { OrganizationsAction, OrganizationsUiState } from "@/features/organizations/types";
 
-export const initialOrganizationsState: OrganizationsState = {
-  data: null,
-  error: null,
+export const initialOrganizationsState: OrganizationsUiState = {
   refreshing: false,
   tab: "ALL",
+  plan: "ALL",
   search: "",
-  detail: null,
+  appliedSearch: "",
+  page: 1,
+  detailOrgId: null,
   statusDialog: null,
+  formDialog: null,
+  subscriptionDialog: null,
+  deleteDialog: null,
 };
 
+/** UI state only: the list, detail and plans come from the RTK Query cache. */
 export function organizationsReducer(
-  state: OrganizationsState,
+  state: OrganizationsUiState,
   action: OrganizationsAction,
-): OrganizationsState {
+): OrganizationsUiState {
   switch (action.type) {
-    case "LOAD_SUCCESS":
-      return { ...state, data: action.payload, error: null, refreshing: false };
-
-    case "LOAD_FAILURE":
-      return { ...state, error: action.payload, refreshing: false };
-
     case "SET_REFRESHING":
       return { ...state, refreshing: action.payload };
 
+    // A filter change starts again from the first page
     case "SET_TAB":
-      return { ...state, tab: action.payload };
+      return { ...state, tab: action.payload, page: 1 };
+
+    case "SET_PLAN":
+      return { ...state, plan: action.payload, page: 1 };
 
     case "SET_SEARCH":
       return { ...state, search: action.payload };
 
+    case "APPLY_SEARCH":
+      return action.payload === state.appliedSearch
+        ? state
+        : { ...state, appliedSearch: action.payload, page: 1 };
+
+    case "SET_PAGE":
+      return { ...state, page: action.payload };
+
     case "OPEN_DETAIL":
-      return {
-        ...state,
-        detail: {
-          orgId: action.payload,
-          data: null,
-          loading: true,
-          error: null,
-        },
-      };
-
-    case "DETAIL_SUCCESS":
-      // Ignore a late response for a dialog that was closed or switched
-      if (state.detail?.orgId !== action.payload.id) return state;
-      return {
-        ...state,
-        detail: {
-          ...state.detail,
-          data: action.payload,
-          loading: false,
-          error: null,
-        },
-      };
-
-    case "DETAIL_FAILURE":
-      if (state.detail?.orgId !== action.payload.orgId) return state;
-      return {
-        ...state,
-        detail: {
-          ...state.detail,
-          loading: false,
-          error: action.payload.error,
-        },
-      };
+      return { ...state, detailOrgId: action.payload };
 
     case "CLOSE_DETAIL":
-      return { ...state, detail: null };
+      return { ...state, detailOrgId: null };
 
     case "OPEN_STATUS_DIALOG":
       return {
@@ -97,6 +76,15 @@ export function organizationsReducer(
 
     case "CLOSE_STATUS_DIALOG":
       return { ...state, statusDialog: null };
+
+    case "SET_FORM_DIALOG":
+      return { ...state, formDialog: action.payload };
+
+    case "SET_SUBSCRIPTION_DIALOG":
+      return { ...state, subscriptionDialog: action.payload };
+
+    case "SET_DELETE_DIALOG":
+      return { ...state, deleteDialog: action.payload };
 
     default:
       return state;

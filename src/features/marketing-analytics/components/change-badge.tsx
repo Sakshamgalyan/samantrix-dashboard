@@ -1,24 +1,24 @@
 "use client";
 
-import { Chip } from "@galyan/ui";
+import { Chip, Typography } from "@galyan/ui";
 import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
 
 /** Change vs the previous period: "+12.5%" / "-3 pts"; nothing when there's no baseline. */
-export function ChangeBadge({
+export const ChangeBadge = ({
   value,
   unit = "%",
 }: {
   value: number | null;
   unit?: "%" | "pts";
-}) {
+}) => {
   if (value === null) return null;
   const suffix = unit === "%" ? "%" : " pts";
   if (value === 0) {
     return (
       <Chip size="sm" variant="neutral" className="whitespace-nowrap">
-        <span className="inline-flex items-center gap-0.5">
+        <Typography variant="small" as="span" className="inline-flex items-center gap-0.5 font-medium tabular-nums text-xs">
           <Minus className="size-3" />0{suffix}
-        </span>
+        </Typography>
       </Chip>
     );
   }
@@ -29,7 +29,7 @@ export function ChangeBadge({
       variant={up ? "success" : "danger"}
       className="whitespace-nowrap"
     >
-      <span className="inline-flex items-center gap-0.5">
+      <Typography variant="small" as="span" className="inline-flex items-center gap-0.5 font-medium tabular-nums text-xs">
         {up ? (
           <ArrowUpRight className="size-3" />
         ) : (
@@ -38,7 +38,7 @@ export function ChangeBadge({
         {up ? "+" : ""}
         {value}
         {suffix}
-      </span>
+      </Typography>
     </Chip>
   );
-}
+};

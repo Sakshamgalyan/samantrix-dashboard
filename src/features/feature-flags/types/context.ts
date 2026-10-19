@@ -4,9 +4,9 @@ import type {
   FeatureFlag,
   FeatureFlagsOverview,
   FeatureFlagsState,
-} from "./state";
-import type { FeatureFlagsAction } from "./actions";
-import type { FeatureFormValues } from "./forms";
+} from "@/features/feature-flags/types/state";
+import type { FeatureFlagsAction } from "@/features/feature-flags/types/actions";
+import type { FeatureFormValues } from "@/features/feature-flags/types/forms";
 
 export interface FeatureFlagsContextType {
   state: FeatureFlagsState;
@@ -22,11 +22,13 @@ export interface FeatureFlagsContextType {
   togglingKey: string | null;
   importing: boolean;
 
-  /** Features in the selected category tab matching the search term. */
+  /** Features in the selected category matching the search term. */
   visibleFeatures: FeatureFlag[];
+  /** visibleFeatures grouped by category, categories A–Z. */
+  groupedFeatures: { category: string; features: FeatureFlag[] }[];
   /** Categories known to the catalog plus the built-in ones (for the form). */
   categoryOptions: string[];
-  /** SUPERADMIN / PLATFORM_ADMIN may edit; REPORT_ADMIN is read-only. */
+  /** Only a superadmin edits the catalog; other developer roles read it. */
   canManage: boolean;
 
   setCategory: (category: string) => void;
@@ -39,6 +41,7 @@ export interface FeatureFlagsContextType {
   refresh: () => void;
   saveFeature: (values: FeatureFormValues) => Promise<boolean>;
   toggleDefault: (feature: FeatureFlag, enabled: boolean) => Promise<void>;
+  toggleGlobal: (feature: FeatureFlag, enabled: boolean) => Promise<void>;
   deleteFeature: () => Promise<void>;
   importDefaults: () => Promise<void>;
 }

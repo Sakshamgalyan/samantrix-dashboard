@@ -1,49 +1,55 @@
-import type { DevelopersAction, DevelopersPageState } from "../types";
+import type { DevelopersAction, DevelopersUiState } from "@/features/developers/types";
 
-export const initialDevelopersState: DevelopersPageState = {
-  data: null,
-  error: null,
+export const initialDevelopersState: DevelopersUiState = {
   refreshing: false,
-  tab: "ALL",
+  statusFilter: "ALL",
+  roleFilter: "ALL",
   search: "",
+  appliedSearch: "",
+  page: 1,
   dialog: null,
-  selectedRole: "USER",
+  form: { fullName: "", phone: "", role: "MEMBER", status: "ACTIVE" },
   submitting: false,
 };
 
 export function developersReducer(
-  state: DevelopersPageState,
+  state: DevelopersUiState,
   action: DevelopersAction,
-): DevelopersPageState {
+): DevelopersUiState {
   switch (action.type) {
-    case "LOAD_SUCCESS":
-      return { ...state, data: action.payload, error: null, refreshing: false };
-
-    case "LOAD_FAILURE":
-      // Keep the last good data on screen; the error shows as a banner over it
-      return { ...state, error: action.payload, refreshing: false };
-
     case "SET_REFRESHING":
       return { ...state, refreshing: action.payload };
 
-    case "SET_TAB":
-      return { ...state, tab: action.payload };
+    // A filter change starts again from the first page
+    case "SET_STATUS_FILTER":
+      return { ...state, statusFilter: action.payload, page: 1 };
+
+    case "SET_ROLE_FILTER":
+      return { ...state, roleFilter: action.payload, page: 1 };
 
     case "SET_SEARCH":
       return { ...state, search: action.payload };
+
+    case "APPLY_SEARCH":
+      return action.payload === state.appliedSearch
+        ? state
+        : { ...state, appliedSearch: action.payload, page: 1 };
+
+    case "SET_PAGE":
+      return { ...state, page: action.payload };
 
     case "OPEN_DIALOG":
       return {
         ...state,
         dialog: action.payload.dialog,
-        selectedRole: action.payload.role,
+        form: action.payload.form,
       };
 
     case "CLOSE_DIALOG":
       return state.submitting ? state : { ...state, dialog: null };
 
-    case "SET_ROLE":
-      return { ...state, selectedRole: action.payload };
+    case "PATCH_FORM":
+      return { ...state, form: { ...state.form, ...action.payload } };
 
     case "SET_SUBMITTING":
       return { ...state, submitting: action.payload };

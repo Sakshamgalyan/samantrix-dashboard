@@ -1,21 +1,21 @@
 "use client";
 
-import { Button, Chip, Tooltip } from "@galyan/ui";
+import { Button, Chip, Tooltip, Typography } from "@galyan/ui";
 import { Lock, Pencil, RotateCcw, Save, Trash2, Undo2 } from "lucide-react";
-import { GLASS_ROW } from "@/components/admin";
-import { formatDateTime, relativeTime } from "@/lib/format";
-import { useSettingsContext } from "../context";
-import type { PlatformSetting } from "../types";
+import { GLASS_ROW } from "@/components/layout/common/glass";
+import { formatDateTime, relativeTime } from "@/utils/format";
+import { useSettingsContext } from "@/features/admin-settings/context";
+import type { PlatformSetting } from "@/features/admin-settings/types/api";
 import {
   formatValue,
   isDirty,
   validateDraft,
   valueToText,
-} from "../common/constants";
-import { SettingControl } from "./setting-control";
+} from "@/features/admin-settings/common/constants";
+import { SettingControl } from "@/features/admin-settings/components/setting-control";
 
 /** One setting: name, key and status on the left; typed control and save/reset actions on the right. */
-export function SettingRow({ setting }: { setting: PlatformSetting }) {
+export const SettingRow = ({ setting }: { setting: PlatformSetting }) => {
   const {
     state,
     canEdit,
@@ -34,13 +34,13 @@ export function SettingRow({ setting }: { setting: PlatformSetting }) {
   const overridden = setting.isBuiltIn && !setting.isDefault;
 
   return (
-    <div className={`${GLASS_ROW} p-4`}>
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
+    <div className={`${GLASS_ROW} p-3`}>
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         <div className="min-w-0 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-sm font-semibold text-[var(--gy-text)]">
+            <Typography variant="span" className="text-sm font-semibold text-[var(--gy-text)]">
               {setting.label}
-            </span>
+            </Typography>
             {setting.isSecret && (
               <Chip size="sm" variant="warning" icon={<Lock className="size-3" />}>
                 <span className="whitespace-nowrap">Secret</span>
@@ -64,26 +64,26 @@ export function SettingRow({ setting }: { setting: PlatformSetting }) {
             )}
           </div>
           {setting.label !== setting.key && (
-            <code className="block truncate font-mono text-[11px] text-[var(--gy-text-subtle)]">
+            <Typography variant="small" className="block truncate font-mono text-[11px] text-[var(--gy-text-subtle)]">
               {setting.key}
-            </code>
+            </Typography>
           )}
           {setting.description && (
-            <p className="text-xs leading-relaxed text-[var(--gy-text-secondary)]">
+            <Typography variant="p" className="text-xs leading-relaxed text-[var(--gy-text-secondary)]">
               {setting.description}
-            </p>
+            </Typography>
           )}
-          <p className="text-[11px] text-[var(--gy-text-subtle)]">
+          <Typography variant="small" className="block text-[11px] text-[var(--gy-text-subtle)]">
             {setting.isDefault ? (
               "Not stored yet: using the built-in default."
             ) : setting.updatedAt ? (
-              <span title={formatDateTime(setting.updatedAt)}>
+              <Typography variant="span" title={formatDateTime(setting.updatedAt)}>
                 Updated {relativeTime(setting.updatedAt)}
                 {overridden &&
                   ` · default ${formatValue(setting, setting.defaultValue)}`}
-              </span>
+              </Typography>
             ) : null}
-          </p>
+          </Typography>
         </div>
 
         <div className="space-y-2">
@@ -99,11 +99,11 @@ export function SettingRow({ setting }: { setting: PlatformSetting }) {
             }
           />
           {canEdit && (
-            <div className="flex flex-wrap items-center justify-end gap-2">
+            <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2">
               {dirty ? (
                 <>
                   <Button
-                    variant="glass"
+                    variant="secondary"
                     size="sm"
                     leftIcon={<Undo2 className="size-3.5" />}
                     onClick={() => discardDraft(setting.key)}
@@ -164,4 +164,4 @@ export function SettingRow({ setting }: { setting: PlatformSetting }) {
       </div>
     </div>
   );
-}
+};

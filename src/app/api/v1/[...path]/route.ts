@@ -1,4 +1,4 @@
-import { handleProxy } from "@/lib/server-proxy";
+import { handleProxy } from "@/lib/server-proxy/handlers";
 
 export const GET = handleProxy;
 export const POST = handleProxy;

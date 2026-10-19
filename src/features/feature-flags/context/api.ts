@@ -1,57 +1,60 @@
-import type React from "react";
-import { api, ApiError } from "@/lib/api";
+import { dashboardApi } from "@/store";
 import type {
   CreateFeatureRequest,
   DeleteFeatureResponse,
   FeatureFlag,
-  FeatureFlagsAction,
   FeatureFlagsOverview,
   ImportDefaultsResponse,
   UpdateFeatureRequest,
-} from "../types";
-import { loadFailure, loadSuccess } from "./action";
+} from "@/features/feature-flags/types";
 
-export function getApiErrorMessage(err: unknown, fallback: string): string {
-  return err instanceof ApiError ? err.message : fallback;
-}
+/** A catalog change also changes what each organization's feature list shows. */
+const CATALOG_CHANGE_TAGS = ["FeatureFlags", "OrgFeatures"] as const;
 
-/** GET /feature-flags → catalog + adoption + summary, dispatched into context. */
-export async function loadFeatureFlagsApi(
-  dispatch: React.Dispatch<FeatureFlagsAction>,
-): Promise<void> {
-  try {
-    dispatch(
-      loadSuccess(await api.get<FeatureFlagsOverview>("/feature-flags")),
-    );
-  } catch (err) {
-    dispatch(
-      loadFailure(
-        getApiErrorMessage(err, "Couldn't load the feature catalog."),
-      ),
-    );
-  }
-}
+/** Feature catalog (developer console). */
+export const featureFlagsApi = dashboardApi.injectEndpoints({
+  endpoints: (build) => ({
+    /** Catalog + adoption across organizations + summary. */
+    getFeatureFlags: build.query<FeatureFlagsOverview, void>({
+      query: () => "/feature-flags",
+      providesTags: ["FeatureFlags"],
+    }),
 
-export function createFeatureApi(body: CreateFeatureRequest) {
-  return api.post<FeatureFlag>("/feature-flags", body);
-}
+    createFeature: build.mutation<FeatureFlag, CreateFeatureRequest>({
+      query: (body) => ({ url: "/feature-flags", method: "POST", body }),
+      invalidatesTags: [...CATALOG_CHANGE_TAGS],
+    }),
 
-export function updateFeatureApi(
-  featureKey: string,
-  body: UpdateFeatureRequest,
-) {
-  return api.patch<FeatureFlag>(
-    `/feature-flags/${encodeURIComponent(featureKey)}`,
-    body,
-  );
-}
+    updateFeature: build.mutation<FeatureFlag, { featureKey: string; body: UpdateFeatureRequest }>({
+      query: ({ featureKey, body }) => ({
+        url: `/feature-flags/${encodeURIComponent(featureKey)}`,
+        method: "PATCH",
+        body,
+      }),
+      invalidatesTags: [...CATALOG_CHANGE_TAGS],
+    }),
 
-export function deleteFeatureApi(featureKey: string) {
-  return api.delete<DeleteFeatureResponse>(
-    `/feature-flags/${encodeURIComponent(featureKey)}`,
-  );
-}
+    /** Deletes the feature and clears it from every organization's settings. */
+    deleteFeature: build.mutation<DeleteFeatureResponse, string>({
+      query: (featureKey) => ({
+        url: `/feature-flags/${encodeURIComponent(featureKey)}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: [...CATALOG_CHANGE_TAGS],
+    }),
 
-export function importDefaultsApi() {
-  return api.post<ImportDefaultsResponse>("/feature-flags/import-defaults");
-}
+    /** Adds every built-in feature missing from the catalog. */
+    importDefaultFeatures: build.mutation<ImportDefaultsResponse, void>({
+      query: () => ({ url: "/feature-flags/import-defaults", method: "POST" }),
+      invalidatesTags: [...CATALOG_CHANGE_TAGS],
+    }),
+  }),
+});
+
+export const {
+  useGetFeatureFlagsQuery,
+  useCreateFeatureMutation,
+  useUpdateFeatureMutation,
+  useDeleteFeatureMutation,
+  useImportDefaultFeaturesMutation,
+} = featureFlagsApi;

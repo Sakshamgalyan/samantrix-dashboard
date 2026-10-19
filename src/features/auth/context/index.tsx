@@ -10,17 +10,17 @@ import React, {
   useRef,
 } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth, type LoginPortal } from "./auth-context";
-import { getHomePath } from "@/lib/home-path";
+import { useAuth, type LoginPortal } from "@/features/auth/context/auth-context";
+import { getHomePath } from "@/utils/home-path";
+import type { AuthMode } from "@/features/auth/types/state";
+import type { AuthPageContextType } from "@/features/auth/types/context";
 import type {
-  AuthMode,
-  AuthPageContextType,
   LoginFormValues,
   TwoFactorFormValues,
   OrgRegistrationFormValues,
-} from "../types";
-import { initialAuthState, authReducer } from "./reducer";
-import * as actions from "./action";
+} from "@/features/auth/types/forms";
+import { initialAuthState, authReducer } from "@/features/auth/context/reducer";
+import * as actions from "@/features/auth/context/action";
 import {
   loginApi,
   verify2FAApi,
@@ -30,19 +30,19 @@ import {
   setLoginPortalApi,
   abandonSignInApi,
   getApiErrorMessage,
-} from "./api";
+} from "@/features/auth/context/api";
 
-const AuthPageContext = createContext<AuthPageContextType | undefined>(
+export const AuthPageContext = createContext<AuthPageContextType | undefined>(
   undefined,
 );
 
-export function AuthPageProvider({
+export const AuthPageProvider = ({
   children,
   initialMode = "login",
 }: {
   children: React.ReactNode;
   initialMode?: AuthMode;
-}) {
+}) => {
   const router = useRouter();
   const { refreshSession, isAuthenticated, user } = useAuth();
 
@@ -55,6 +55,9 @@ export function AuthPageProvider({
   // Replays the last sign-in attempt (password or 2FA step) once a blocking device is signed out
   const retrySignInRef = useRef<(() => Promise<boolean>) | null>(null);
 
+  // Track the incoming initialMode so we only sync when the parent prop genuinely changes
+  const prevInitialModeRef = useRef<AuthMode>(initialMode);
+
   // Redirect to dashboard if authenticated
   useEffect(() => {
     if (isAuthenticated) {
@@ -62,8 +65,17 @@ export function AuthPageProvider({
     }
   }, [isAuthenticated, user, router]);
 
+  // Sync authMode when initialMode prop changes from parent navigation
+  useEffect(() => {
+    if (initialMode && initialMode !== prevInitialModeRef.current) {
+      prevInitialModeRef.current = initialMode;
+      dispatch(actions.setAuthMode(initialMode));
+    }
+  }, [initialMode]);
+
   // Action dispatch helpers
   const setAuthMode = useCallback((mode: AuthMode) => {
+    prevInitialModeRef.current = mode;
     dispatch(actions.setAuthMode(mode));
   }, []);
 
@@ -330,19 +342,11 @@ export function AuthPageProvider({
       {children}
     </AuthPageContext.Provider>
   );
-}
+};
 
-export function useAuthPageContext(): AuthPageContextType {
-  const context = useContext(AuthPageContext);
-  if (!context) {
-    throw new Error(
-      "useAuthPageContext must be used within an AuthPageProvider",
-    );
-  }
-  return context;
-}
 
-export * from "./reducer";
-export * from "./action";
-export * from "./api";
-export * from "./auth-context";
+export * from "@/features/auth/context/reducer";
+export * from "@/features/auth/context/action";
+export * from "@/features/auth/context/api";
+export * from "@/features/auth/context/auth-context";
+export * from "@/features/auth/context/hooks";

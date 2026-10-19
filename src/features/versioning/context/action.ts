@@ -1,25 +1,10 @@
 import type {
   AppFilter,
   ChannelFilter,
-  Release,
   StatusFilter,
   VersioningAction,
   VersioningDialog,
-  VersioningSummary,
-} from "../types";
-
-export const loadSuccess = (
-  releases: Release[],
-  summary: VersioningSummary,
-): VersioningAction => ({
-  type: "LOAD_SUCCESS",
-  payload: { releases, summary },
-});
-
-export const loadFailure = (message: string): VersioningAction => ({
-  type: "LOAD_FAILURE",
-  payload: message,
-});
+} from "@/features/versioning/types";
 
 export const setRefreshing = (refreshing: boolean): VersioningAction => ({
   type: "SET_REFRESHING",
@@ -39,6 +24,16 @@ export const setChannelFilter = (filter: ChannelFilter): VersioningAction => ({
 export const setStatusFilter = (filter: StatusFilter): VersioningAction => ({
   type: "SET_STATUS_FILTER",
   payload: filter,
+});
+
+export const setSearch = (search: string): VersioningAction => ({
+  type: "SET_SEARCH",
+  payload: search,
+});
+
+export const setPage = (page: number): VersioningAction => ({
+  type: "SET_PAGE",
+  payload: page,
 });
 
 export const openDialog = (dialog: VersioningDialog): VersioningAction => ({
