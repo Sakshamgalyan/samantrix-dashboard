@@ -19,12 +19,12 @@
     ]
   },
   "dependencies": {
-    "@galyan/theme": "^1.0.16",
-    "@galyan/ui": "^1.0.16",
+    "@galyan/theme": "^1.0.17",
+    "@galyan/ui": "^1.0.17",
     "@reduxjs/toolkit": "^2.13.0",
     "axios": "^1.20.0",
     "lucide-react": "^1.38.0",
-    "next": "16.4.0",
+    "next": "16.4.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-hook-form": "^7.89.0",
