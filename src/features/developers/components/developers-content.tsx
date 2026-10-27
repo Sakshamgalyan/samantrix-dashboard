@@ -1,35 +1,60 @@
 "use client";
 
-import { Dropdown, Input } from "@galyan/ui";
+import dynamic from "next/dynamic";
+import { Button, Dropdown, Input } from "@galyan/ui";
 import {
   Clock,
   Code2,
   Search,
   ShieldBan,
   UserCheck,
+  UserPlus,
   Users,
 } from "lucide-react";
-import { AdminLoadError, AdminPageSkeleton, SectionEmpty } from "@/components/layout/common/states";
+import {
+  AdminLoadError,
+  AdminPageSkeleton,
+  SectionEmpty,
+} from "@/components/layout/common/states";
 import { GlassSection } from "@/components/layout/common/glass-section";
 import { KpiCard } from "@/components/layout/common/kpi-card";
 import { useDevelopersContext } from "@/features/developers/context";
-import { ROLE_FILTERS, STATUS_FILTERS } from "@/features/developers/common/constants";
+import {
+  ROLE_FILTERS,
+  STATUS_FILTERS,
+} from "@/features/developers/common/constants";
 import type { RoleFilter, StatusFilter } from "@/features/developers/types";
 import { DevelopersTable } from "@/features/developers/components/developers-table";
 import { PendingQueue } from "@/features/developers/components/pending-queue";
-import { DecisionDialog } from "@/features/developers/components/decision-dialog";
 
-export function DevelopersContent() {
+const DecisionDialog = dynamic(
+  () =>
+    import("@/features/developers/components/decision-dialog").then(
+      (m) => m.DecisionDialog,
+    ),
+  { ssr: false },
+);
+
+const InviteDeveloperModal = dynamic(
+  () =>
+    import("@/features/developers/components/invite-developer-modal").then(
+      (m) => m.InviteDeveloperModal,
+    ),
+  { ssr: false },
+);
+
+export const DevelopersContent = () => {
   const {
     state,
     pendingDevelopers,
+    canManageDevelopers,
+    openInviteModal,
     setStatusFilter,
     setRoleFilter,
     setSearch,
     refresh,
   } = useDevelopersContext();
-  const { summary, error, statusFilter, roleFilter, search, meta } =
-    state;
+  const { summary, error, statusFilter, roleFilter, search, meta } = state;
 
   if (!summary) {
     return error ? (
@@ -85,6 +110,17 @@ export function DevelopersContent() {
         subtitle={`${meta?.total ?? 0} of ${counts.total} shown`}
         aside={
           <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
+            {canManageDevelopers && (
+              <Button
+                variant="primary"
+                size="sm"
+                leftIcon={<UserPlus className="size-3.5" />}
+                onClick={() => openInviteModal()}
+                className="w-full sm:w-auto shrink-0"
+              >
+                Invite developer
+              </Button>
+            )}
             <div className="w-full sm:w-56 md:w-64">
               <Input
                 size="sm"
@@ -133,6 +169,7 @@ export function DevelopersContent() {
       </GlassSection>
 
       <DecisionDialog />
+      <InviteDeveloperModal />
     </div>
   );
-}
+};

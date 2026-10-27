@@ -4,6 +4,7 @@ import type { DevelopersAction } from "@/features/developers/types/actions";
 import type {
   DeveloperDialog,
   DeveloperForm,
+  InviteDeveloperForm,
   DevelopersPageState,
   RoleFilter,
   StatusFilter,
@@ -45,8 +46,12 @@ export interface DevelopersContextType {
   openDialog: (dialog: DeveloperDialog) => void;
   closeDialog: () => void;
   patchForm: (patch: Partial<DeveloperForm>) => void;
+  openInviteModal: (defaultRole?: string) => void;
+  closeInviteModal: () => void;
+  patchInviteForm: (patch: Partial<InviteDeveloperForm>) => void;
 
   // API handlers
   refresh: () => Promise<void>;
   submitDialog: () => Promise<void>;
+  submitInvite: () => Promise<void>;
 }

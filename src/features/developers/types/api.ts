@@ -38,3 +38,26 @@ export interface UpdateDeveloperRequest {
   platformRole?: string;
   status?: "ACTIVE" | "SUSPENDED";
 }
+
+/** POST /users/developers body to create/invite a developer */
+export interface CreateDeveloperRequest {
+  email: string;
+  fullName?: string;
+  phone?: string;
+  platformRole?: string;
+  password?: string;
+}
+
+export interface CreateDeveloperResponse {
+  success: boolean;
+  message: string;
+  temporaryPassword?: string;
+  developer: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string | null;
+    platformRole: string;
+    status: DeveloperStatus;
+  };
+}

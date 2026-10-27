@@ -1,6 +1,8 @@
 import type { Paginated, PageQueryParams } from "@/features/common/pagination";
 import { dashboardApi } from "@/store";
 import type {
+  CreateDeveloperRequest,
+  CreateDeveloperResponse,
   DeveloperAccount,
   DevelopersSummary,
   UpdateDeveloperRequest,
@@ -25,8 +27,24 @@ export const developersApi = dashboardApi.injectEndpoints({
       providesTags: ["Developers"],
     }),
 
+    /** Directly invite / create a new developer (Superadmin or Manager). */
+    createDeveloper: build.mutation<
+      CreateDeveloperResponse,
+      CreateDeveloperRequest
+    >({
+      query: (body) => ({
+        url: "/users/developers",
+        method: "POST",
+        body,
+      }),
+      invalidatesTags: ["Developers"],
+    }),
+
     /** Approve a pending request or reinstate a rejected developer with a role. */
-    approveDeveloper: build.mutation<void, { id: string; platformRole: string }>({
+    approveDeveloper: build.mutation<
+      void,
+      { id: string; platformRole: string }
+    >({
       query: ({ id, platformRole }) => ({
         url: `/users/developers/${id}/approve`,
         method: "PATCH",
@@ -37,13 +55,23 @@ export const developersApi = dashboardApi.injectEndpoints({
 
     /** Reject a pending request (the developer is emailed). */
     rejectDeveloper: build.mutation<void, string>({
-      query: (id) => ({ url: `/users/developers/${id}/reject`, method: "PATCH" }),
+      query: (id) => ({
+        url: `/users/developers/${id}/reject`,
+        method: "PATCH",
+      }),
       invalidatesTags: ["Developers"],
     }),
 
     /** Edit name / phone / role / status; a role change or suspension signs them out. */
-    updateDeveloper: build.mutation<void, { id: string; body: UpdateDeveloperRequest }>({
-      query: ({ id, body }) => ({ url: `/users/developers/${id}`, method: "PATCH", body }),
+    updateDeveloper: build.mutation<
+      void,
+      { id: string; body: UpdateDeveloperRequest }
+    >({
+      query: ({ id, body }) => ({
+        url: `/users/developers/${id}`,
+        method: "PATCH",
+        body,
+      }),
       invalidatesTags: ["Developers"],
     }),
 
@@ -58,6 +86,7 @@ export const developersApi = dashboardApi.injectEndpoints({
 export const {
   useGetDevelopersSummaryQuery,
   useGetDevelopersQuery,
+  useCreateDeveloperMutation,
   useApproveDeveloperMutation,
   useRejectDeveloperMutation,
   useUpdateDeveloperMutation,

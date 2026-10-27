@@ -1,4 +1,15 @@
-import type { DevelopersAction, DevelopersUiState } from "@/features/developers/types";
+import type {
+  DevelopersAction,
+  DevelopersUiState,
+} from "@/features/developers/types";
+
+export const initialInviteForm = {
+  email: "",
+  fullName: "",
+  phone: "",
+  role: "MEMBER",
+  password: "",
+};
 
 export const initialDevelopersState: DevelopersUiState = {
   refreshing: false,
@@ -10,6 +21,9 @@ export const initialDevelopersState: DevelopersUiState = {
   dialog: null,
   form: { fullName: "", phone: "", role: "MEMBER", status: "ACTIVE" },
   submitting: false,
+  isInviteOpen: false,
+  inviteForm: initialInviteForm,
+  inviting: false,
 };
 
 export function developersReducer(
@@ -53,6 +67,28 @@ export function developersReducer(
 
     case "SET_SUBMITTING":
       return { ...state, submitting: action.payload };
+
+    case "OPEN_INVITE_MODAL":
+      return {
+        ...state,
+        isInviteOpen: true,
+        inviteForm: {
+          ...initialInviteForm,
+          role: action.payload?.defaultRole || "MEMBER",
+        },
+      };
+
+    case "CLOSE_INVITE_MODAL":
+      return state.inviting ? state : { ...state, isInviteOpen: false };
+
+    case "PATCH_INVITE_FORM":
+      return {
+        ...state,
+        inviteForm: { ...state.inviteForm, ...action.payload },
+      };
+
+    case "SET_INVITING":
+      return { ...state, inviting: action.payload };
 
     default:
       return state;

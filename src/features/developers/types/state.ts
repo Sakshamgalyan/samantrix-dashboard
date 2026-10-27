@@ -35,6 +35,15 @@ export interface DeveloperForm {
   status: "ACTIVE" | "SUSPENDED";
 }
 
+/** Values in the invite developer dialog. */
+export interface InviteDeveloperForm {
+  email: string;
+  fullName: string;
+  phone: string;
+  role: string;
+  password: string;
+}
+
 /** Page-local UI state (reducer); server data comes from the shared store. */
 export interface DevelopersUiState {
   refreshing: boolean;
@@ -49,6 +58,9 @@ export interface DevelopersUiState {
   dialog: DeveloperDialog | null;
   form: DeveloperForm;
   submitting: boolean;
+  isInviteOpen: boolean;
+  inviteForm: InviteDeveloperForm;
+  inviting: boolean;
 }
 
 /** What consumers read: UI state plus the cached developer queries. */

@@ -14,11 +14,15 @@ import { pageParams } from "@/features/common/pagination";
 import { useDebounce } from "@/hooks/use-debounce";
 import { POLL_INTERVAL_MS, queryErrorMessage } from "@/store";
 import { hasPermission, isSuperadmin } from "@/utils/roles";
-import { ROLE_OPTIONS, roleLabel } from "@/features/developers/common/constants";
+import {
+  ROLE_OPTIONS,
+  roleLabel,
+} from "@/features/developers/common/constants";
 import type {
   DeveloperAccount,
   DeveloperDialog,
   DeveloperForm,
+  InviteDeveloperForm,
   DevelopersContextType,
   DevelopersPageState,
   RoleFilter,
@@ -26,10 +30,14 @@ import type {
   StatusFilter,
   UpdateDeveloperRequest,
 } from "@/features/developers/types";
-import { developersReducer, initialDevelopersState } from "@/features/developers/context/reducer";
+import {
+  developersReducer,
+  initialDevelopersState,
+} from "@/features/developers/context/reducer";
 import * as actions from "@/features/developers/context/action";
 import {
   useApproveDeveloperMutation,
+  useCreateDeveloperMutation,
   useDeleteDeveloperMutation,
   useGetDevelopersQuery,
   useGetDevelopersSummaryQuery,
@@ -45,9 +53,9 @@ const POLLING = {
 /** The approval queue: first page of pending registrations (same args as that table filter). */
 const PENDING_PARAMS = pageParams(1, { status: "PENDING_VERIFICATION" });
 
-export const DevelopersContext = createContext<DevelopersContextType | undefined>(
-  undefined,
-);
+export const DevelopersContext = createContext<
+  DevelopersContextType | undefined
+>(undefined);
 
 /** Only the fields that differ from the developer's current values. */
 function changedFields(
@@ -55,7 +63,8 @@ function changedFields(
   form: DeveloperForm,
 ): UpdateDeveloperRequest {
   const body: UpdateDeveloperRequest = {};
-  if (form.fullName.trim() !== dev.fullName) body.fullName = form.fullName.trim();
+  if (form.fullName.trim() !== dev.fullName)
+    body.fullName = form.fullName.trim();
   if (form.phone.trim() !== (dev.phone ?? "")) body.phone = form.phone.trim();
   if (form.role !== dev.platformRole) body.platformRole = form.role;
   if (
@@ -101,6 +110,7 @@ export function DevelopersProvider({
   const [rejectDeveloper] = useRejectDeveloperMutation();
   const [updateDeveloper] = useUpdateDeveloperMutation();
   const [deleteDeveloper] = useDeleteDeveloperMutation();
+  const [createDeveloper] = useCreateDeveloperMutation();
 
   // Copy the typed search into the query after a short pause
   const debouncedSearch = useDebounce(ui.search, 350);
@@ -114,13 +124,18 @@ export function DevelopersProvider({
       ...ui,
       summary: summaryQuery.data ?? null,
       error: summaryQuery.error
-        ? queryErrorMessage(summaryQuery.error, "Couldn't load developer accounts.")
+        ? queryErrorMessage(
+            summaryQuery.error,
+            "Couldn't load developer accounts.",
+          )
         : null,
       rows: listQuery.data?.data ?? [],
       meta: listQuery.data?.meta ?? null,
       // Old rows stay up while another page/filter loads; skeleton only when there's nothing to show
       listLoading:
-        listQuery.isFetching && !listQuery.currentData && !listQuery.data?.data.length,
+        listQuery.isFetching &&
+        !listQuery.currentData &&
+        !listQuery.data?.data.length,
     }),
     [
       ui,
@@ -152,9 +167,15 @@ export function DevelopersProvider({
     (dev: DeveloperAccount): RowPermissions => {
       if (!canManageDevelopers) return { canManage: false };
       if (dev.id === user?.id)
-        return { canManage: false, reason: "You can't change your own account here" };
+        return {
+          canManage: false,
+          reason: "You can't change your own account here",
+        };
       if (dev.platformRole === "SUPERADMIN" && !actorIsSuperadmin)
-        return { canManage: false, reason: "Only a Superadmin can change a Superadmin" };
+        return {
+          canManage: false,
+          reason: "Only a Superadmin can change a Superadmin",
+        };
       return { canManage: true };
     },
     [canManageDevelopers, actorIsSuperadmin, user?.id],
@@ -209,7 +230,10 @@ export function DevelopersProvider({
       switch (kind) {
         case "approve":
         case "reinstate":
-          await approveDeveloper({ id: dev.id, platformRole: form.role }).unwrap();
+          await approveDeveloper({
+            id: dev.id,
+            platformRole: form.role,
+          }).unwrap();
           message = `${kind === "approve" ? "Approved" : "Reinstated"} ${dev.fullName} as ${roleLabel(form.role)}.`;
           break;
         case "reject":
@@ -217,7 +241,10 @@ export function DevelopersProvider({
           message = `Rejected ${dev.fullName}'s request.`;
           break;
         case "role":
-          await updateDeveloper({ id: dev.id, body: { platformRole: form.role } }).unwrap();
+          await updateDeveloper({
+            id: dev.id,
+            body: { platformRole: form.role },
+          }).unwrap();
           message = `${dev.fullName} is now ${roleLabel(form.role)}.`;
           break;
         case "suspend":
@@ -254,9 +281,62 @@ export function DevelopersProvider({
       dispatch(actions.closeDialog());
     } catch (err) {
       dispatch(actions.setSubmitting(false));
-      toast.error(queryErrorMessage(err, "That action failed. Please try again."));
+      toast.error(
+        queryErrorMessage(err, "That action failed. Please try again."),
+      );
     }
-  }, [state, toast, approveDeveloper, rejectDeveloper, updateDeveloper, deleteDeveloper]);
+  }, [
+    state,
+    toast,
+    approveDeveloper,
+    rejectDeveloper,
+    updateDeveloper,
+    deleteDeveloper,
+  ]);
+
+  const openInviteModal = useCallback((defaultRole?: string) => {
+    dispatch(actions.openInviteModal(defaultRole));
+  }, []);
+
+  const closeInviteModal = useCallback(() => {
+    dispatch(actions.closeInviteModal());
+  }, []);
+
+  const patchInviteForm = useCallback((patch: Partial<InviteDeveloperForm>) => {
+    dispatch(actions.patchInviteForm(patch));
+  }, []);
+
+  const submitInvite = useCallback(async () => {
+    const { inviteForm } = state;
+    const email = inviteForm.email.trim();
+    if (!email || !email.includes("@")) {
+      toast.error("Please enter a valid email address.");
+      return;
+    }
+
+    dispatch(actions.setInviting(true));
+    try {
+      const res = await createDeveloper({
+        email,
+        fullName: inviteForm.fullName.trim() || undefined,
+        phone: inviteForm.phone.trim() || undefined,
+        platformRole: inviteForm.role,
+        password: inviteForm.password.trim() || undefined,
+      }).unwrap();
+
+      toast.success(
+        res.temporaryPassword
+          ? `Developer invited! Temporary password: ${res.temporaryPassword}`
+          : res.message || `Invitation sent to ${email}`,
+      );
+      dispatch(actions.setInviting(false));
+      dispatch(actions.closeInviteModal());
+      await Promise.allSettled([refetchSummary(), refetchList()]);
+    } catch (err) {
+      dispatch(actions.setInviting(false));
+      toast.error(queryErrorMessage(err, "Failed to invite developer."));
+    }
+  }, [state, toast, createDeveloper, refetchSummary, refetchList]);
 
   const pendingDevelopers = useMemo(
     () => (hasPending ? (pendingQuery.data?.data ?? []) : []),
@@ -279,8 +359,12 @@ export function DevelopersProvider({
       openDialog,
       closeDialog,
       patchForm,
+      openInviteModal,
+      closeInviteModal,
+      patchInviteForm,
       refresh,
       submitDialog,
+      submitInvite,
     }),
     [
       state,
@@ -296,8 +380,12 @@ export function DevelopersProvider({
       openDialog,
       closeDialog,
       patchForm,
+      openInviteModal,
+      closeInviteModal,
+      patchInviteForm,
       refresh,
       submitDialog,
+      submitInvite,
     ],
   );
 

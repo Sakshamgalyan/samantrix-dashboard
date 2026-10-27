@@ -55,3 +55,24 @@ export const setSubmitting = (submitting: boolean): DevelopersAction => ({
   type: "SET_SUBMITTING",
   payload: submitting,
 });
+
+export const openInviteModal = (defaultRole?: string): DevelopersAction => ({
+  type: "OPEN_INVITE_MODAL",
+  payload: defaultRole ? { defaultRole } : undefined,
+});
+
+export const closeInviteModal = (): DevelopersAction => ({
+  type: "CLOSE_INVITE_MODAL",
+});
+
+export const patchInviteForm = (
+  patch: Partial<import("@/features/developers/types").InviteDeveloperForm>,
+): DevelopersAction => ({
+  type: "PATCH_INVITE_FORM",
+  payload: patch,
+});
+
+export const setInviting = (inviting: boolean): DevelopersAction => ({
+  type: "SET_INVITING",
+  payload: inviting,
+});
