@@ -1,8 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import axios, {
-  AxiosError,
-  type InternalAxiosRequestConfig,
-} from "axios";
+import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 import { getDeviceId } from "@/utils/device-id";
 import {
   ApiError,
@@ -46,8 +43,8 @@ export { isAuthenticatedResponse };
 export const apiClient = axios.create({
   baseURL: API_BASE,
   // Aborts the request (not just the promise) once it runs past the limit
-  timeout: REQUEST_TIMEOUT_MS,
-  timeoutErrorMessage: "timeout",
+  // timeout: REQUEST_TIMEOUT_MS,
+  // timeoutErrorMessage: "timeout",
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
@@ -111,7 +108,8 @@ apiClient.interceptors.response.use(
         window.dispatchEvent(
           new CustomEvent(BACKEND_UNAVAILABLE_EVENT, {
             detail: {
-              message: "Can't reach the server. Check your connection and try again.",
+              message:
+                "Can't reach the server. Check your connection and try again.",
               status: 0,
             },
           }),
@@ -153,12 +151,18 @@ const inFlightGets = new Map<string, Promise<unknown>>();
  * mount together (or effects re-run by Strict Mode) make one network call.
  * Calls with their own AbortSignal or headers are never shared.
  */
-function dedupedGet<T>(endpoint: string, options?: ApiRequestOptions): Promise<T> {
-  if (options?.signal || options?.headers) return apiClient.get<T, T>(endpoint, options) as Promise<T>;
+function dedupedGet<T>(
+  endpoint: string,
+  options?: ApiRequestOptions,
+): Promise<T> {
+  if (options?.signal || options?.headers)
+    return apiClient.get<T, T>(endpoint, options) as Promise<T>;
   const key = `${endpoint}?${JSON.stringify(options?.params ?? null)}`;
   const pending = inFlightGets.get(key);
   if (pending) return pending as Promise<T>;
-  const request = (apiClient.get<T, T>(endpoint, options) as Promise<T>).finally(() => {
+  const request = (
+    apiClient.get<T, T>(endpoint, options) as Promise<T>
+  ).finally(() => {
     inFlightGets.delete(key);
   });
   inFlightGets.set(key, request);
@@ -187,7 +191,9 @@ export const api = {
  * never needs the access token itself.
  */
 export async function getSocketTicket(): Promise<string> {
-  const result = await apiClient.post<{ ticket: string }, { ticket: string }>("/auth/socket-ticket");
+  const result = await apiClient.post<{ ticket: string }, { ticket: string }>(
+    "/auth/socket-ticket",
+  );
   if (!result?.ticket) throw new ApiError("No socket ticket", 401);
   return result.ticket;
 }

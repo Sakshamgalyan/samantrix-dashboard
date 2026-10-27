@@ -31,24 +31,35 @@ export async function handleProxy(
     if (!pathname.startsWith("/api/v1/")) {
       return NextResponse.next();
     }
-    path = pathname.replace(/^\/api\/v1\/?/, "").split("/").filter(Boolean);
+    path = pathname
+      .replace(/^\/api\/v1\/?/, "")
+      .split("/")
+      .filter(Boolean);
   }
   const joinedPath = path.map(encodeURIComponent).join("/");
   const isAuthPath = path[0] === "auth";
   const isRefresh = request.method === "POST" && joinedPath === "auth/refresh";
   const isLogout = request.method === "POST" && joinedPath === "auth/logout";
   const secure = cookieIsSecure(request);
-  const noStore: HeadersInit | undefined = isAuthPath ? { "Cache-Control": "no-store" } : undefined;
+  const noStore: HeadersInit | undefined = isAuthPath
+    ? { "Cache-Control": "no-store" }
+    : undefined;
 
   // Same-origin app: there is nothing to preflight, and foreign preflights get no CORS grant
   if (request.method === "OPTIONS") {
-    return new NextResponse(null, { status: 204, headers: { Allow: "GET, HEAD, POST, PUT, PATCH, DELETE" } });
+    return new NextResponse(null, {
+      status: 204,
+      headers: { Allow: "GET, HEAD, POST, PUT, PATCH, DELETE" },
+    });
   }
 
   // SAM-015: Restricted BFF paths. Public website submissions and beacon belong exclusively to Home BFF (:4000).
   const isPublicLeadSubmission =
     path[0] === "leads" &&
-    (path[1] === "contact" || (path[1] === "waitlist" && path.length === 2 && request.method === "POST"));
+    (path[1] === "contact" ||
+      (path[1] === "waitlist" &&
+        path.length === 2 &&
+        request.method === "POST"));
   const isPublicVersioning = path[0] === "versioning" && path[1] === "public";
   const isPublicAnalytics = path[0] === "analytics" && path[1] === "track";
 
@@ -72,14 +83,20 @@ export async function handleProxy(
   const forwardHeaders = new Headers();
   request.headers.forEach((value, key) => {
     const lower = key.toLowerCase();
-    if (DROP_REQUEST_HEADERS.has(lower) || lower.startsWith("x-simantrix-")) return;
+    if (DROP_REQUEST_HEADERS.has(lower) || lower.startsWith("x-simantrix-"))
+      return;
     forwardHeaders.set(key, value);
   });
   forwardHeaders.set(
     "x-forwarded-for",
-    request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "127.0.0.1",
+    request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "127.0.0.1",
   );
-  forwardHeaders.set("x-forwarded-host", request.headers.get("host") || "localhost");
+  forwardHeaders.set(
+    "x-forwarded-host",
+    request.headers.get("host") || "localhost",
+  );
   forwardHeaders.set("x-forwarded-proto", proto);
   if (accessCookie && !forwardHeaders.has("authorization")) {
     forwardHeaders.set("authorization", `Bearer ${accessCookie}`);
@@ -96,7 +113,10 @@ export async function handleProxy(
     body = JSON.stringify({ refreshToken: refreshCookie });
     forwardHeaders.set("content-type", "application/json");
   } else if (isLogout && refreshCookie) {
-    body = JSON.stringify({ ...parseJsonObject(body), refreshToken: refreshCookie });
+    body = JSON.stringify({
+      ...parseJsonObject(body),
+      refreshToken: refreshCookie,
+    });
     forwardHeaders.set("content-type", "application/json");
   }
 
@@ -111,7 +131,8 @@ export async function handleProxy(
       body: JSON.stringify({ refreshToken: refreshCookie }),
       cache: "no-store",
       redirect: "manual",
-      signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      // signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+      signal: request.signal,
     });
   };
 
@@ -120,15 +141,20 @@ export async function handleProxy(
     if (isLogout && refreshCookie && !accessCookie) {
       upstream = await logoutByRefreshToken();
     } else {
-      upstream = await fetch(`${INTERNAL_BACKEND_URL}/api/v1/${joinedPath}${request.nextUrl.search}`, {
-        method: request.method,
-        headers: forwardHeaders,
-        body,
-        cache: "no-store",
-        redirect: "manual",
-        signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
-      });
-      if (isLogout && refreshCookie && upstream.status === 401) upstream = await logoutByRefreshToken();
+      upstream = await fetch(
+        `${INTERNAL_BACKEND_URL}/api/v1/${joinedPath}${request.nextUrl.search}`,
+        {
+          method: request.method,
+          headers: forwardHeaders,
+          body,
+          cache: "no-store",
+          redirect: "manual",
+          // signal: AbortSignal.timeout(UPSTREAM_TIMEOUT_MS),
+          signal: request.signal,
+        },
+      );
+      if (isLogout && refreshCookie && upstream.status === 401)
+        upstream = await logoutByRefreshToken();
     }
   } catch (error) {
     if (error instanceof Error && error.message === "Payload too large") {
@@ -140,7 +166,9 @@ export async function handleProxy(
     );
     const isTimeout = error instanceof Error && error.name === "TimeoutError";
     const status = isTimeout ? 504 : 503;
-    const msg = isTimeout ? "Gateway timeout" : "Unable to connect to internal services.";
+    const msg = isTimeout
+      ? "Gateway timeout"
+      : "Unable to connect to internal services.";
     const response = jsonError(status, msg, noStore);
     if (isLogout) clearSessionCookies(response, secure);
     return response;
@@ -148,7 +176,8 @@ export async function handleProxy(
 
   const responseHeaders = new Headers();
   upstream.headers.forEach((value, key) => {
-    if (!DROP_RESPONSE_HEADERS.has(key.toLowerCase())) responseHeaders.set(key, value);
+    if (!DROP_RESPONSE_HEADERS.has(key.toLowerCase()))
+      responseHeaders.set(key, value);
   });
   responseHeaders.set("X-Content-Type-Options", "nosniff");
   responseHeaders.set("X-Frame-Options", "SAMEORIGIN");
@@ -180,7 +209,12 @@ export async function handleProxy(
   if (isLogout || (isRefresh && upstream.status === 401)) {
     clearSessionCookies(response, secure);
   } else if (tokens) {
-    setSessionCookies(response, secure, tokens.accessToken, tokens.refreshToken);
+    setSessionCookies(
+      response,
+      secure,
+      tokens.accessToken,
+      tokens.refreshToken,
+    );
   }
 
   return response;
