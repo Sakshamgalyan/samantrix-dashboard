@@ -1,6 +1,6 @@
 import type { AxiosRequestConfig, InternalAxiosRequestConfig } from "axios";
 
-export const REQUEST_TIMEOUT_MS = 30_000;
+export const REQUEST_TIMEOUT_MS = 60_000;
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export interface ApiResponse<T = any> {

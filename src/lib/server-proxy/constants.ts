@@ -48,4 +48,4 @@ export const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 export const NULL_BODY_STATUSES = new Set([101, 204, 205, 304]);
 
 export const MAX_BODY_BYTES = 15 * 1024 * 1024; // 15 MB cap
-export const UPSTREAM_TIMEOUT_MS = 30_000;
+export const UPSTREAM_TIMEOUT_MS = 60_000;
