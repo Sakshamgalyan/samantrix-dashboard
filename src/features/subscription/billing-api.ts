@@ -3,7 +3,12 @@
 import { useCallback } from "react";
 import { POLL_INTERVAL_MS, queryErrorMessage } from "@/store";
 import type { Paginated } from "@/features/common/pagination";
-import type { BillingCycle, PaymentPurpose, PaymentStatus, PlanTier } from "@/features/payments/types";
+import type {
+  BillingCycle,
+  PaymentPurpose,
+  PaymentStatus,
+  PlanTier,
+} from "@/features/payments/types";
 import {
   useCreateCheckoutOrderMutation,
   useGetMyBillingQuery,
@@ -102,11 +107,15 @@ export function useMyBilling() {
     pollingInterval: POLL_INTERVAL_MS,
     skipPollingIfUnfocused: true,
   });
-  const forbidden = !data && (error as { status?: number } | undefined)?.status === 403;
+  const forbidden =
+    !data && (error as { status?: number } | undefined)?.status === 403;
 
   return {
     data: data ?? null,
-    error: data || !error || forbidden ? null : queryErrorMessage(error, "Couldn't load billing."),
+    error:
+      data || !error || forbidden
+        ? null
+        : queryErrorMessage(error, "Couldn't load billing."),
     forbidden,
     loading: isLoading,
     reload: refetch,
@@ -123,7 +132,10 @@ export interface RazorpaySuccess {
 
 interface RazorpayInstance {
   open: () => void;
-  on: (event: "payment.failed", cb: (resp: { error?: { description?: string } }) => void) => void;
+  on: (
+    event: "payment.failed",
+    cb: (resp: { error?: { description?: string } }) => void,
+  ) => void;
 }
 
 declare global {
@@ -136,8 +148,34 @@ const CHECKOUT_SRC = "https://checkout.razorpay.com/v1/checkout.js";
 let scriptPromise: Promise<void> | null = null;
 
 function loadCheckoutScript(): Promise<void> {
-  if (typeof window === "undefined") return Promise.reject(new Error("No window"));
+  if (typeof window === "undefined")
+    return Promise.reject(new Error("No window"));
   if (window.Razorpay) return Promise.resolve();
+
+  const existing = document.querySelector<HTMLScriptElement>(
+    `script[src="${CHECKOUT_SRC}"]`,
+  );
+  if (existing) {
+    return new Promise((resolve, reject) => {
+      if (window.Razorpay) return resolve();
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener(
+        "error",
+        () =>
+          reject(
+            new Error(
+              "Couldn't load Razorpay Checkout. Check your connection and try again.",
+            ),
+          ),
+        { once: true },
+      );
+      // Fallback check after 500ms in case it loaded already without firing listener
+      setTimeout(() => {
+        if (window.Razorpay) resolve();
+      }, 500);
+    });
+  }
+
   scriptPromise ??= new Promise<void>((resolve, reject) => {
     const script = document.createElement("script");
     script.src = CHECKOUT_SRC;
@@ -145,7 +183,12 @@ function loadCheckoutScript(): Promise<void> {
     script.onload = () => resolve();
     script.onerror = () => {
       scriptPromise = null;
-      reject(new Error("Couldn't load Razorpay Checkout. Check your connection and try again."));
+      script.remove();
+      reject(
+        new Error(
+          "Couldn't load Razorpay Checkout. Check your connection and try again.",
+        ),
+      );
     };
     document.body.appendChild(script);
   });
@@ -184,7 +227,7 @@ export function useRunCheckout() {
         };
 
         const rzp = new Razorpay({
-          key: order.keyId,
+          key: order.keyId || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
           order_id: order.orderId,
           amount: order.amount,
           currency: order.currency,
@@ -195,7 +238,10 @@ export function useRunCheckout() {
           handler: async (resp: RazorpaySuccess) => {
             try {
               const result = await verifyCheckout(resp).unwrap();
-              finish({ status: "paid", invoiceNumber: result.invoiceNumber ?? null });
+              finish({
+                status: "paid",
+                invoiceNumber: result.invoiceNumber ?? null,
+              });
             } catch (err) {
               settled = true;
               reject(err);
@@ -203,7 +249,12 @@ export function useRunCheckout() {
           },
           // Closing after a failed attempt reports the failure; closing before paying is a dismissal
           modal: {
-            ondismiss: () => finish(lastFailure ? { status: "failed", reason: lastFailure } : { status: "dismissed" }),
+            ondismiss: () =>
+              finish(
+                lastFailure
+                  ? { status: "failed", reason: lastFailure }
+                  : { status: "dismissed" },
+              ),
           },
         });
 
@@ -211,7 +262,10 @@ export function useRunCheckout() {
         let lastFailure: string | null = null;
         rzp.on("payment.failed", (resp) => {
           lastFailure = resp.error?.description || "The payment failed.";
-          reportFailure({ razorpay_order_id: order.orderId, reason: lastFailure })
+          reportFailure({
+            razorpay_order_id: order.orderId,
+            reason: lastFailure,
+          })
             .unwrap()
             .catch(() => undefined);
         });

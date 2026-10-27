@@ -22,10 +22,7 @@ import {
   ShieldAlert,
 } from "lucide-react";
 import { relativeTime } from "@/utils/format";
-import {
-  APP_META,
-  CHANNEL_META,
-} from "@/features/versioning/common/constants";
+import { APP_META, CHANNEL_META } from "@/features/versioning/common/constants";
 import { useVersioningContext } from "@/features/versioning/context";
 import {
   RELEASE_CHANNELS,
@@ -89,7 +86,11 @@ export const CurrentVersions = () => {
             >
               Simantrix Desktop Channels
             </Typography>
-            <Chip size="xs" variant="primary" icon={<Laptop className="size-3" />}>
+            <Chip
+              size="xs"
+              variant="primary"
+              icon={<Laptop className="size-3" />}
+            >
               Electron 43
             </Chip>
           </div>
@@ -98,7 +99,8 @@ export const CurrentVersions = () => {
             textColor="var(--gy-text-secondary)"
             className="text-xs"
           >
-            Production, beta, and canary release channels for the Simantrix Desktop application.
+            Production, beta, and canary release channels for the Simantrix
+            Desktop application.
           </Typography>
         </div>
 
@@ -139,41 +141,35 @@ export const CurrentVersions = () => {
               className="group relative flex flex-col justify-between transition-all duration-200 hover:border-[var(--gy-primary)]/40 hover:shadow-md"
             >
               <div className="space-y-3">
-                {/* Header: Channel Name & Badge */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex items-center gap-2.5">
-                    <div className="grid size-9 place-items-center rounded-lg bg-[var(--gy-primary)]/10 text-[var(--gy-primary)] transition-transform duration-200 group-hover:scale-105">
+                {/* Header: Channel Name & Status Badge */}
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                    <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-[var(--gy-primary)]/10 text-[var(--gy-primary)] transition-transform duration-200 group-hover:scale-105 mt-0.5">
                       {icon}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-1.5">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         <Typography
                           variant="p"
                           weight="semibold"
                           textColor="var(--gy-text)"
-                          className="text-sm font-semibold tracking-tight"
+                          className="text-sm font-semibold tracking-tight leading-tight"
                         >
                           {meta.label}
                         </Typography>
-                        <Chip
-                          size="xs"
-                          variant={meta.variant}
-                          className="text-[10px]"
-                        >
-                          {channel}
-                        </Chip>
                       </div>
                       <Typography
                         variant="small"
                         textColor="var(--gy-text-subtle)"
-                        className="text-[11px] block truncate max-w-[200px]"
+                        className="text-[11px] leading-snug line-clamp-1 mt-0.5"
+                        title={meta.description}
                       >
                         {meta.description}
                       </Typography>
                     </div>
                   </div>
 
-                  <div>
+                  <div className="shrink-0">
                     {activeRollout ? (
                       <Chip
                         size="xs"
@@ -201,49 +197,47 @@ export const CurrentVersions = () => {
                 </div>
 
                 {/* Primary Version Block */}
-                <div className="rounded-md border border-[var(--gy-border)]/50 bg-[var(--gy-bg-subtle)]/40 p-2.5">
+                <div className="rounded-lg border border-[var(--gy-border)]/60 bg-[var(--gy-bg-subtle)]/40 p-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-[11px] font-medium uppercase tracking-wider text-[var(--gy-text-subtle)]">
+                    <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--gy-text-subtle)]">
                       Current Build
                     </span>
                     {liveFull?.isMandatory && (
                       <Chip size="xs" variant="warning" className="text-[10px]">
-                        Mandatory Update
+                        Mandatory
                       </Chip>
                     )}
                   </div>
 
-                  <div className="mt-1.5 flex items-baseline justify-between gap-2">
+                  <div className="mt-2 flex items-center justify-between gap-3">
                     {liveRelease ? (
-                      <div className="flex flex-col">
-                        <div className="flex items-baseline gap-2">
-                          <span className="font-mono text-base font-bold text-[var(--gy-text)] tracking-tight">
-                            v{liveRelease.version}
-                          </span>
-                          {liveRelease.releasedAt && (
-                            <span className="flex items-center gap-1 text-[11px] text-[var(--gy-text-subtle)]">
-                              <Clock className="size-2.5" />
-                              {relativeTime(liveRelease.releasedAt)}
-                            </span>
-                          )}
+                      <div className="min-w-0 flex-1">
+                        <div className="font-mono text-base font-bold tracking-tight text-[var(--gy-text)] leading-none">
+                          v{liveRelease.version}
                         </div>
+                        {liveRelease.releasedAt && (
+                          <div className="mt-1.5 flex items-center gap-1 text-[11px] text-[var(--gy-text-subtle)] whitespace-nowrap">
+                            <Clock className="size-3 shrink-0" />
+                            <span>{relativeTime(liveRelease.releasedAt)}</span>
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <span className="text-xs text-[var(--gy-text-subtle)] italic">
+                      <div className="text-xs text-[var(--gy-text-subtle)] italic py-1">
                         No active release on {channel}
-                      </span>
+                      </div>
                     )}
 
                     {canManage && liveRelease && (
                       <Tooltip
-                        content="Rollback / Downgrade"
+                        content="Rollback to previous release"
                         position="top"
                         size="sm"
                       >
                         <Button
                           variant="danger-soft"
                           size="xs"
-                          className="h-6 px-1.5 text-[11px]"
+                          className="shrink-0 h-6 px-2 text-[11px] font-medium"
                           leftIcon={<ArrowDownLeft className="size-2.5" />}
                           onClick={() => {
                             const fullItem = findFullRelease(
@@ -333,14 +327,18 @@ export const CurrentVersions = () => {
               {/* Card Footer: Quick Actions */}
               <div className="mt-3 border-t border-[var(--gy-border)]/50 pt-2.5">
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
                     <span
-                      className={`size-2 rounded-full ${
-                        liveRelease ? "bg-emerald-500" : "bg-neutral-600/40"
+                      className={`size-2 shrink-0 rounded-full ${
+                        liveRelease
+                          ? "bg-emerald-500 shadow-sm shadow-emerald-500/50"
+                          : "bg-neutral-600/40"
                       }`}
                     />
-                    <span className="text-[11px] text-[var(--gy-text-subtle)]">
-                      {liveRelease ? `v${liveRelease.version} Deployed` : "Awaiting build"}
+                    <span className="text-[11px] text-[var(--gy-text-subtle)] truncate">
+                      {liveRelease
+                        ? `v${liveRelease.version} Deployed`
+                        : "Awaiting build"}
                     </span>
                   </div>
 
@@ -348,7 +346,7 @@ export const CurrentVersions = () => {
                     <Button
                       variant="ghost"
                       size="xs"
-                      className="text-xs"
+                      className="shrink-0 text-xs h-7 px-2"
                       leftIcon={<Plus className="size-3" />}
                       onClick={() =>
                         openDialog({

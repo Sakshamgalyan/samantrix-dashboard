@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Banner, Button, Modal, Spinner, Typography } from "@galyan/ui";
 import { Building2, ChevronRight, Code2 } from "lucide-react";
 import type { LoginPortal } from "@/features/auth/context/auth-context";
@@ -11,7 +12,7 @@ interface PortalSelectModalProps {
   error: string | null;
   onSelect: (portal: LoginPortal) => void;
   /** Backs out of the sign-in (ends the session that was just opened). */
-  onCancel: () => void;
+  onCancel: () => void | Promise<void>;
 }
 
 interface PortalOption {
@@ -34,11 +35,24 @@ export const PortalSelectModal = ({
   onSelect,
   onCancel,
 }: PortalSelectModalProps) => {
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  const handleCancel = async () => {
+    if (isCancelling || submitting !== null) return;
+    setIsCancelling(true);
+    try {
+      await onCancel();
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
   const options: PortalOption[] = [
     {
       id: "DEVELOPER",
       title: "Sign in as developer",
-      description: "Platform console: organizations, leads, feature flags, releases and audit logs.",
+      description:
+        "Platform console: organizations, leads, feature flags, releases and audit logs.",
       icon: <Code2 className="size-5" />,
     },
     {
@@ -52,6 +66,8 @@ export const PortalSelectModal = ({
     },
   ];
 
+  const isBusy = submitting !== null || isCancelling;
+
   return (
     <Modal
       isOpen={isOpen}
@@ -64,20 +80,34 @@ export const PortalSelectModal = ({
       preventBackdropClose
       footer={
         <div className="flex justify-end">
-          <Button variant="ghost" size="sm" onClick={onCancel} disabled={submitting !== null}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleCancel}
+            isLoading={isCancelling}
+            loadingText="Signing out..."
+            disabled={isBusy}
+          >
             Cancel and sign out
           </Button>
         </div>
       }
     >
       <div className="space-y-3">
-        {error && <Banner variant="danger" size="sm" bannerStyle="subtle" description={error} />}
+        {error && (
+          <Banner
+            variant="danger"
+            size="sm"
+            bannerStyle="subtle"
+            description={error}
+          />
+        )}
 
         {options.map((option) => (
           <button
             key={option.id}
             type="button"
-            disabled={option.disabled || submitting !== null}
+            disabled={option.disabled || isBusy}
             onClick={() => onSelect(option.id)}
             className="group flex w-full items-center gap-4 rounded-xl border border-[var(--gy-border)] bg-[color-mix(in_srgb,var(--gy-surface)_55%,transparent)] p-4 text-left transition-colors hover:border-[var(--gy-primary)] hover:bg-[var(--gy-primary)]/5 focus-visible:outline-2 focus-visible:outline-[var(--gy-primary)] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:border-[var(--gy-border)] disabled:hover:bg-[color-mix(in_srgb,var(--gy-surface)_55%,transparent)]"
           >
@@ -85,10 +115,17 @@ export const PortalSelectModal = ({
               {option.icon}
             </span>
             <span className="min-w-0 flex-1 space-y-0.5">
-              <Typography variant="span" weight="semibold" className="block text-sm text-[var(--gy-text)]">
+              <Typography
+                variant="span"
+                weight="semibold"
+                className="block text-sm text-[var(--gy-text)]"
+              >
                 {option.title}
               </Typography>
-              <Typography variant="span" className="block text-xs text-[var(--gy-text-secondary)]">
+              <Typography
+                variant="span"
+                className="block text-xs text-[var(--gy-text-secondary)]"
+              >
                 {option.description}
               </Typography>
             </span>

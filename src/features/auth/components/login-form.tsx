@@ -59,7 +59,10 @@ const Divider = ({ label }: { label: string }) => {
   return (
     <div className="flex items-center gap-2.5 my-0.5">
       <span className="h-px flex-1 bg-[var(--gy-divider)]" />
-      <Typography variant="span" className="text-[10px] uppercase tracking-wider text-[var(--gy-text-subtle)]">
+      <Typography
+        variant="span"
+        className="text-[10px] uppercase tracking-wider text-[var(--gy-text-subtle)]"
+      >
         {label}
       </Typography>
       <span className="h-px flex-1 bg-[var(--gy-divider)]" />
@@ -86,18 +89,23 @@ export const LoginForm = () => {
     setAuthMode,
   } = useAuthPageContext();
 
-  const [oauthLoading, setOauthLoading] = useState<"google" | "microsoft" | null>(null);
+  const [oauthLoading, setOauthLoading] = useState<
+    "google" | "microsoft" | null
+  >(null);
 
   const handleOAuthSignIn = async (provider: "google" | "microsoft") => {
     try {
       setOauthLoading(provider);
       setError(null);
-      const res = await api.get<{ url: string }>(`/auth/oauth/${provider}/url`, {
-        params: {
-          app: "dashboard",
-          redirectUri: `${window.location.origin}/auth/callback`,
+      const res = await api.get<{ url: string }>(
+        `/auth/oauth/${provider}/url`,
+        {
+          params: {
+            app: "dashboard",
+            redirectUri: `${window.location.origin}/auth/callback`,
+          },
         },
-      });
+      );
       if (res?.url) {
         window.location.href = res.url;
       } else {
@@ -105,14 +113,18 @@ export const LoginForm = () => {
       }
     } catch (err) {
       setOauthLoading(null);
-      setError(err instanceof Error ? err.message : "Failed to initiate single sign-on.");
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Failed to initiate single sign-on.",
+      );
     }
   };
 
   const {
     register: registerLogin,
     handleSubmit: handleLoginSubmit,
-    formState: { errors: loginErrors },
+    formState: { errors: loginErrors, isSubmitting: isLoginSubmitting },
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -125,7 +137,7 @@ export const LoginForm = () => {
   const {
     register: register2FA,
     handleSubmit: handle2FASubmitForm,
-    formState: { errors: errors2FA },
+    formState: { errors: errors2FA, isSubmitting: is2FASubmitting },
     reset: reset2FAForm,
   } = useForm<TwoFactorFormValues>({
     resolver: zodResolver(twoFactorSchema),
@@ -133,6 +145,9 @@ export const LoginForm = () => {
       twoFactorCode: "",
     },
   });
+
+  const isLoginBusy = loading || isLoginSubmitting || oauthLoading !== null;
+  const is2FABusy = loading || is2FASubmitting;
 
   const errorBanner = error && (
     <Banner
@@ -147,7 +162,10 @@ export const LoginForm = () => {
 
   if (requires2FA) {
     return (
-      <form onSubmit={handle2FASubmitForm(handle2FASubmit)} className="space-y-3">
+      <form
+        onSubmit={handle2FASubmitForm(handle2FASubmit)}
+        className="space-y-3"
+      >
         <div className="space-y-2">
           <span
             className={`grid size-9 place-items-center rounded-lg ${
@@ -156,13 +174,26 @@ export const LoginForm = () => {
                 : "bg-[var(--gy-primary)]/10 text-[var(--gy-primary)]"
             }`}
           >
-            {isBackupCodeMode ? <ShieldAlert className="size-4" /> : <KeyRound className="size-4" />}
+            {isBackupCodeMode ? (
+              <ShieldAlert className="size-4" />
+            ) : (
+              <KeyRound className="size-4" />
+            )}
           </span>
           <div className="space-y-0.5">
-            <Typography variant="h4" weight="bold" className="text-base tracking-tight text-[var(--gy-text)]">
-              {isBackupCodeMode ? "Use a backup code" : "Two-factor verification"}
+            <Typography
+              variant="h4"
+              weight="bold"
+              className="text-base tracking-tight text-[var(--gy-text)]"
+            >
+              {isBackupCodeMode
+                ? "Use a backup code"
+                : "Two-factor verification"}
             </Typography>
-            <Typography variant="p" className="text-xs text-[var(--gy-text-secondary)]">
+            <Typography
+              variant="p"
+              className="text-xs text-[var(--gy-text-secondary)]"
+            >
               {isBackupCodeMode
                 ? "Enter one of your one-time recovery codes."
                 : "Enter the 6-digit code from your authenticator app."}
@@ -183,6 +214,7 @@ export const LoginForm = () => {
           maxLength={isBackupCodeMode ? 16 : 6}
           autoFocus
           fullWidth
+          disabled={is2FABusy}
           className={AUTOFILL_FIX}
           leftIcon={<KeyRound className="size-3.5" />}
           hasError={!!errors2FA.twoFactorCode}
@@ -196,7 +228,9 @@ export const LoginForm = () => {
             variant="primary"
             size="md"
             fullWidth
-            isLoading={loading}
+            isLoading={is2FABusy}
+            disabled={is2FABusy}
+            loadingText="Verifying..."
             rightIcon={<ArrowRight className="size-4" />}
           >
             Verify and continue
@@ -207,6 +241,7 @@ export const LoginForm = () => {
               variant="ghost"
               size="sm"
               leftIcon={<ArrowLeft className="size-3.5" />}
+              disabled={is2FABusy}
               onClick={() => {
                 setRequires2FA(false);
                 reset2FAForm();
@@ -219,6 +254,7 @@ export const LoginForm = () => {
               type="button"
               variant="link"
               size="sm"
+              disabled={is2FABusy}
               onClick={() => {
                 setIsBackupCodeMode(!isBackupCodeMode);
                 reset2FAForm();
@@ -236,10 +272,17 @@ export const LoginForm = () => {
   return (
     <div className="space-y-2.5 sm:space-y-3">
       <div className="space-y-0.5">
-        <Typography variant="h4" weight="bold" className="text-base sm:text-lg tracking-tight text-[var(--gy-text)]">
+        <Typography
+          variant="h4"
+          weight="bold"
+          className="text-base sm:text-lg tracking-tight text-[var(--gy-text)]"
+        >
           Welcome back
         </Typography>
-        <Typography variant="p" className="text-xs text-[var(--gy-text-secondary)]">
+        <Typography
+          variant="p"
+          className="text-xs text-[var(--gy-text-secondary)]"
+        >
           Sign in to your Simantrix Control Center.
         </Typography>
       </div>
@@ -252,7 +295,7 @@ export const LoginForm = () => {
           fullWidth
           leftIcon={<GoogleIcon />}
           isLoading={oauthLoading === "google"}
-          disabled={loading || oauthLoading !== null}
+          disabled={isLoginBusy}
           onClick={() => handleOAuthSignIn("google")}
         >
           Google
@@ -264,7 +307,7 @@ export const LoginForm = () => {
           fullWidth
           leftIcon={<MicrosoftIcon />}
           isLoading={oauthLoading === "microsoft"}
-          disabled={loading || oauthLoading !== null}
+          disabled={isLoginBusy}
           onClick={() => handleOAuthSignIn("microsoft")}
         >
           Microsoft
@@ -273,7 +316,11 @@ export const LoginForm = () => {
 
       <Divider label="or continue with email" />
 
-      <form onSubmit={handleLoginSubmit(handleLogin)} className="space-y-2 sm:space-y-2.5" noValidate>
+      <form
+        onSubmit={handleLoginSubmit(handleLogin)}
+        className="space-y-2 sm:space-y-2.5"
+        noValidate
+      >
         {errorBanner}
 
         <Input
@@ -283,6 +330,7 @@ export const LoginForm = () => {
           autoComplete="email"
           placeholder="you@company.com"
           fullWidth
+          disabled={isLoginBusy}
           className={AUTOFILL_FIX}
           leftIcon={<Mail className="size-3.5" />}
           hasError={!!loginErrors.email}
@@ -297,9 +345,16 @@ export const LoginForm = () => {
           autoComplete="current-password"
           placeholder="Enter your password"
           fullWidth
+          disabled={isLoginBusy}
           className={AUTOFILL_FIX}
           leftIcon={<Lock className="size-3.5" />}
-          rightIcon={showPassword ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+          rightIcon={
+            showPassword ? (
+              <EyeOff className="size-3.5" />
+            ) : (
+              <Eye className="size-3.5" />
+            )
+          }
           onRightIconClick={() => setShowPassword(!showPassword)}
           hasError={!!loginErrors.password}
           error={loginErrors.password?.message}
@@ -310,6 +365,7 @@ export const LoginForm = () => {
           <Checkbox
             size="sm"
             checked={rememberWorkstation}
+            disabled={isLoginBusy}
             onChange={(e) => setRememberWorkstation(e.target.checked)}
             label="Remember me for 30 days"
           />
@@ -317,6 +373,7 @@ export const LoginForm = () => {
             type="button"
             variant="link"
             size="sm"
+            disabled={isLoginBusy}
             onClick={() => setAuthMode("forgot-password")}
           >
             Forgot password?
@@ -328,7 +385,9 @@ export const LoginForm = () => {
           variant="primary"
           size="md"
           fullWidth
-          isLoading={loading}
+          isLoading={isLoginBusy}
+          disabled={isLoginBusy}
+          loadingText="Signing in..."
           rightIcon={<ArrowRight className="size-4" />}
         >
           Sign in
@@ -337,7 +396,10 @@ export const LoginForm = () => {
 
       <div className="flex items-center justify-center gap-1.5 pt-0.5">
         <ShieldCheck className="size-3 text-[var(--gy-success)]" />
-        <Typography variant="span" className="text-[10px] sm:text-[11px] text-[var(--gy-text-subtle)]">
+        <Typography
+          variant="span"
+          className="text-[10px] sm:text-[11px] text-[var(--gy-text-subtle)]"
+        >
           Secured with TLS 1.3 · SOC2 Type II · ISO 27001
         </Typography>
       </div>

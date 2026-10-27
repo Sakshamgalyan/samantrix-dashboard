@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { DM_Sans, Unbounded } from "next/font/google";
 import "@galyan/theme/css/variables";
 import "@galyan/ui/styles.css";
@@ -47,6 +48,10 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeGuardScript }} />
       </head>
       <body className="min-h-full flex flex-col font-sans">
+        <Script
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          strategy="lazyOnload"
+        />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

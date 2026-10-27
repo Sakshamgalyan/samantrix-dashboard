@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Banner, Button, Modal, Typography } from "@galyan/ui";
 import { Laptop, MonitorSmartphone, Trash2 } from "lucide-react";
 import { useAuthPageContext } from "@/features/auth/context";
@@ -8,7 +9,10 @@ function formatWhen(value: string): string {
   const date = new Date(value);
   return Number.isNaN(date.getTime())
     ? "Unknown"
-    : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+    : date.toLocaleString(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      });
 }
 
 /**
@@ -16,15 +20,30 @@ function formatWhen(value: string): string {
  * (sign out) action; once it is gone the sign-in is retried automatically.
  */
 export const ActiveSessionModal = () => {
-  const { sessionConflict, handleRevokeBlockingSession, dismissSessionConflict } =
-    useAuthPageContext();
+  const {
+    sessionConflict,
+    handleRevokeBlockingSession,
+    dismissSessionConflict,
+  } = useAuthPageContext();
 
-  const busy = Boolean(sessionConflict?.revokingId);
+  const [isDismissing, setIsDismissing] = useState(false);
+
+  const busy = Boolean(sessionConflict?.revokingId) || isDismissing;
+
+  const handleDismiss = async () => {
+    if (busy) return;
+    setIsDismissing(true);
+    try {
+      await dismissSessionConflict();
+    } finally {
+      setIsDismissing(false);
+    }
+  };
 
   return (
     <Modal
       isOpen={sessionConflict !== null}
-      onClose={busy ? undefined : dismissSessionConflict}
+      onClose={busy ? undefined : handleDismiss}
       size="md"
       icon={<MonitorSmartphone className="size-4" />}
       title="Signed in on another device"
@@ -32,7 +51,13 @@ export const ActiveSessionModal = () => {
       preventBackdropClose={busy}
       footer={
         <div className="flex justify-end">
-          <Button variant="secondary" onClick={dismissSessionConflict} disabled={busy}>
+          <Button
+            variant="secondary"
+            onClick={handleDismiss}
+            isLoading={isDismissing}
+            loadingText="Cancelling..."
+            disabled={busy}
+          >
             Cancel
           </Button>
         </div>
@@ -40,7 +65,12 @@ export const ActiveSessionModal = () => {
     >
       <div className="space-y-3">
         {sessionConflict?.error && (
-          <Banner variant="danger" size="sm" bannerStyle="subtle" description={sessionConflict.error} />
+          <Banner
+            variant="danger"
+            size="sm"
+            bannerStyle="subtle"
+            description={sessionConflict.error}
+          />
         )}
 
         {sessionConflict?.sessions.map((session) => (
@@ -52,14 +82,24 @@ export const ActiveSessionModal = () => {
               <Laptop className="size-4" />
             </span>
             <div className="min-w-0 flex-1">
-              <Typography variant="span" weight="semibold" className="block truncate text-sm text-[var(--gy-text)]">
+              <Typography
+                variant="span"
+                weight="semibold"
+                className="block truncate text-sm text-[var(--gy-text)]"
+              >
                 {session.deviceName || "Unknown device"}
               </Typography>
-              <Typography variant="span" className="block truncate text-xs text-[var(--gy-text-secondary)]">
+              <Typography
+                variant="span"
+                className="block truncate text-xs text-[var(--gy-text-secondary)]"
+              >
                 Signed in {formatWhen(session.loginAt)}
                 {session.ipAddress ? ` · ${session.ipAddress}` : ""}
               </Typography>
-              <Typography variant="span" className="block text-xs text-[var(--gy-text-subtle)]">
+              <Typography
+                variant="span"
+                className="block text-xs text-[var(--gy-text-subtle)]"
+              >
                 Last active {formatWhen(session.lastSeenAt)}
               </Typography>
             </div>
@@ -68,6 +108,7 @@ export const ActiveSessionModal = () => {
               size="sm"
               leftIcon={<Trash2 className="size-3.5" />}
               isLoading={sessionConflict.revokingId === session.id}
+              loadingText="Signing out..."
               disabled={busy}
               onClick={() => handleRevokeBlockingSession(session.id)}
             >

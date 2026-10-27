@@ -2,7 +2,15 @@
 
 import { useMemo } from "react";
 import dynamic from "next/dynamic";
-import { Banner, Button, Card, Chip, Skeleton, Tabs, Typography } from "@galyan/ui";
+import {
+  Banner,
+  Button,
+  Card,
+  Chip,
+  Skeleton,
+  Tabs,
+  Typography,
+} from "@galyan/ui";
 import { CreditCard, Lock, RotateCw } from "lucide-react";
 import { pageParams } from "@/features/common/pagination";
 import {
@@ -13,9 +21,17 @@ import {
 import { POLL_INTERVAL_MS } from "@/store";
 import { useGetMyPaymentsQuery } from "@/features/subscription/context/api";
 import { useMyBilling } from "@/features/subscription/billing-api";
-import { ACTIVE_PLANS, CYCLE_TABS, RECENT_PAYMENTS } from "@/features/subscription/common/constants";
+import {
+  ACTIVE_PLANS,
+  CYCLE_TABS,
+  RECENT_PAYMENTS,
+} from "@/features/subscription/common/constants";
 import { useSubscription } from "@/features/subscription/context";
-import { setCycleAction, openCheckoutAction, closeCheckoutAction } from "@/features/subscription/context/action";
+import {
+  setCycleAction,
+  openCheckoutAction,
+  closeCheckoutAction,
+} from "@/features/subscription/context/action";
 import type { BillingCycle, PlanTier } from "@/features/subscription/types/api";
 import { CurrentPlan } from "@/features/subscription/components/current-plan";
 import { PlanCard } from "@/features/subscription/components/plan-card";
@@ -29,32 +45,60 @@ const CheckoutModal = dynamic(
   { ssr: false },
 );
 
-const POLLING = { pollingInterval: POLL_INTERVAL_MS, skipPollingIfUnfocused: true } as const;
+const POLLING = {
+  pollingInterval: POLL_INTERVAL_MS,
+  skipPollingIfUnfocused: true,
+} as const;
 
 export const SubscriptionContent = () => {
   const { state, dispatch } = useSubscription();
   const { cycle, checkout, checkoutKey } = state;
   const { data, error, forbidden, loading, reload } = useMyBilling();
 
-  const plans = useGetFinancePlansQuery(ACTIVE_PLANS, { ...LONG_LIVED_QUERY, skip: forbidden }).data ?? [];
-  const config = useGetPaymentsConfigQuery(undefined, { ...LONG_LIVED_QUERY, skip: forbidden }).data;
+  const plans =
+    useGetFinancePlansQuery(ACTIVE_PLANS, {
+      ...LONG_LIVED_QUERY,
+      skip: forbidden,
+    }).data ?? [];
+  const config = useGetPaymentsConfigQuery(undefined, {
+    ...LONG_LIVED_QUERY,
+    skip: forbidden,
+  }).data;
   const firstPage = useMemo(() => pageParams(1), []);
-  const payments = useGetMyPaymentsQuery(firstPage, { ...POLLING, skip: forbidden }).data;
+  const payments = useGetMyPaymentsQuery(firstPage, {
+    ...POLLING,
+    skip: forbidden,
+  }).data;
   const paymentsEnabled = config?.enabled ?? false;
 
   if (forbidden) {
     return (
-      <Card variant="elevated" radius="xl" padding="md" className="border border-[var(--gy-border)] bg-[var(--gy-surface)] shadow-xs">
+      <Card
+        variant="elevated"
+        radius="xl"
+        padding="md"
+        className="border border-[var(--gy-border)] bg-[var(--gy-surface)] shadow-xs"
+      >
         <div className="flex items-center gap-3">
           <div className="grid size-10 place-items-center rounded-xl bg-[var(--gy-warning)]/15 text-[var(--gy-warning)]">
             <Lock className="size-5" />
           </div>
           <div>
-            <Typography variant="h3" weight="bold" textColor="var(--gy-text)" className="text-sm sm:text-base">
+            <Typography
+              variant="h3"
+              weight="bold"
+              textColor="var(--gy-text)"
+              className="text-sm sm:text-base"
+            >
               Access Restricted
             </Typography>
-            <Typography variant="p" textColor="var(--gy-text-secondary)" className="text-xs sm:text-sm">
-              Only organization owners and administrators can view and change the subscription plan.
+            <Typography
+              variant="p"
+              textColor="var(--gy-text-secondary)"
+              className="text-xs sm:text-sm"
+            >
+              Only organization owners and administrators can view and change
+              the subscription plan.
             </Typography>
           </div>
         </div>
@@ -79,7 +123,12 @@ export const SubscriptionContent = () => {
   if (!data) {
     return (
       <div className="space-y-3">
-        <Banner variant="danger" size="sm" bannerStyle="subtle" description={error ?? "Couldn't load billing."} />
+        <Banner
+          variant="danger"
+          size="sm"
+          bannerStyle="subtle"
+          description={error ?? "Couldn't load billing."}
+        />
         <Button size="sm" variant="secondary" onClick={() => void reload()}>
           Try again
         </Button>
@@ -88,9 +137,16 @@ export const SubscriptionContent = () => {
   }
 
   const sub = data.subscription;
-  const seatsDefault = Math.max(data.seats.used, data.seats.purchased, 1);
+  const seatsDefault = 1;
   const choose = (planTier: PlanTier) =>
-    dispatch(openCheckoutAction({ purpose: "PLAN", planTier, billingCycle: cycle, seats: seatsDefault }));
+    dispatch(
+      openCheckoutAction({
+        purpose: "PLAN",
+        planTier,
+        billingCycle: cycle,
+        seats: seatsDefault,
+      }),
+    );
   const recent = (payments?.data ?? []).slice(0, RECENT_PAYMENTS);
 
   return (
@@ -108,11 +164,15 @@ export const SubscriptionContent = () => {
               <Chip variant="soft" size="sm">
                 Subscription &amp; Plans
               </Chip>
-              <Chip variant={sub?.isActivePaid ? "success" : "neutral"} size="sm">
+              <Chip
+                variant={sub?.isActivePaid ? "success" : "neutral"}
+                size="sm"
+              >
                 {sub?.isActivePaid ? "Active subscription" : "Free tier"}
               </Chip>
               <Chip variant="neutral" size="sm">
-                {data.seats.used} of {data.seats.purchased || data.seats.used} seats used
+                {data.seats.used} of {data.seats.purchased || data.seats.used}{" "}
+                seats used
               </Chip>
             </div>
             <Typography
@@ -128,7 +188,8 @@ export const SubscriptionContent = () => {
               textColor="var(--gy-text-secondary)"
               className="max-w-2xl text-xs sm:text-sm leading-relaxed"
             >
-              Manage workplace tiers, expand active collaborator seat capacity, review current invoices, and toggle billing cycles.
+              Manage workplace tiers, expand active collaborator seat capacity,
+              review current invoices, and toggle billing cycles.
             </Typography>
           </div>
 
@@ -136,7 +197,11 @@ export const SubscriptionContent = () => {
             <Button
               variant="secondary"
               size="sm"
-              leftIcon={<RotateCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />}
+              leftIcon={
+                <RotateCw
+                  className={`size-3.5 ${loading ? "animate-spin" : ""}`}
+                />
+              }
               disabled={loading}
               onClick={() => void reload()}
               className="flex-1 sm:flex-initial"
@@ -149,7 +214,9 @@ export const SubscriptionContent = () => {
 
       <CurrentPlan
         data={data}
-        onAddSeats={() => dispatch(openCheckoutAction({ purpose: "SEATS", seats: 1 }))}
+        onAddSeats={() =>
+          dispatch(openCheckoutAction({ purpose: "SEATS", seats: 1 }))
+        }
       />
 
       {/* Plan selection & Billing Cycle tabs */}
@@ -157,12 +224,24 @@ export const SubscriptionContent = () => {
         <div>
           <div className="flex items-center gap-2">
             <CreditCard className="size-4 text-[var(--gy-primary)]" />
-            <Typography variant="h3" weight="bold" textColor="var(--gy-text)" className="text-base sm:text-lg">
+            <Typography
+              variant="h3"
+              weight="bold"
+              textColor="var(--gy-text)"
+              className="text-base sm:text-lg"
+            >
               Available plans
             </Typography>
           </div>
-          <Typography variant="p" textColor="var(--gy-text-secondary)" className="text-xs sm:text-sm">
-            Per-seat pricing in INR; {config?.taxPercent ?? 18}% GST is applied at checkout.
+          <Typography
+            variant="p"
+            textColor="var(--gy-text-secondary)"
+            className="text-xs sm:text-sm"
+          >
+            Per-seat pricing in INR;{" "}
+            {config?.taxPercent
+              ? `${config.taxPercent}% GST is applied at checkout.`
+              : "taxes included / zero GST at checkout."}
           </Typography>
         </div>
         <div className="w-full sm:w-56 shrink-0">
@@ -192,7 +271,11 @@ export const SubscriptionContent = () => {
             key={plan.id}
             plan={plan}
             cycle={cycle}
-            current={Boolean(sub?.isActivePaid && sub.planTier === plan.planTier && sub.billingCycle === cycle)}
+            current={Boolean(
+              sub?.isActivePaid &&
+              sub.planTier === plan.planTier &&
+              sub.billingCycle === cycle,
+            )}
             onChoose={() => choose(plan.planTier)}
           />
         ))}
