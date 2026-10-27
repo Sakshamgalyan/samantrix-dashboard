@@ -9,7 +9,7 @@
 FROM node:26-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@11.20.0 --activate
+RUN npm install -g pnpm@11.20.0
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 
