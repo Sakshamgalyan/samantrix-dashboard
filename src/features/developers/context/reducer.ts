@@ -9,6 +9,8 @@ export const initialInviteForm = {
   phone: "",
   role: "MEMBER",
   password: "",
+  organizationId: "",
+  orgRole: "MEMBER",
 };
 
 export const initialDevelopersState: DevelopersUiState = {

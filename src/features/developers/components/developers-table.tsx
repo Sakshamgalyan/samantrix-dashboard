@@ -27,8 +27,15 @@ import { formatDate, relativeTime } from "@/utils/format";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useMounted } from "@/hooks/use-mounted";
 import { useDevelopersContext } from "@/features/developers/context";
-import { ROLE_CHIP, STATUS_META, roleLabel } from "@/features/developers/common/constants";
-import type { DeveloperAccount, DeveloperDialogKind } from "@/features/developers/types";
+import {
+  ROLE_CHIP,
+  STATUS_META,
+  roleLabel,
+} from "@/features/developers/common/constants";
+import type {
+  DeveloperAccount,
+  DeveloperDialogKind,
+} from "@/features/developers/types";
 
 const ICON = "size-3.5";
 
@@ -37,23 +44,52 @@ function menuItems(dev: DeveloperAccount): MenuItem[] {
   switch (dev.status) {
     case "PENDING_VERIFICATION":
       return [
-        { id: "approve", label: "Approve…", icon: <CheckCircle2 className={ICON} /> },
+        {
+          id: "approve",
+          label: "Approve…",
+          icon: <CheckCircle2 className={ICON} />,
+        },
         { id: "reject", label: "Reject", icon: <XCircle className={ICON} /> },
         { id: "delete", label: "Delete", icon: <Trash2 className={ICON} /> },
       ];
     case "INACTIVE":
       return [
-        { id: "reinstate", label: "Reinstate…", icon: <ShieldCheck className={ICON} /> },
+        {
+          id: "reinstate",
+          label: "Reinstate…",
+          icon: <ShieldCheck className={ICON} />,
+        },
         { id: "delete", label: "Delete", icon: <Trash2 className={ICON} /> },
       ];
     default:
       return [
-        { id: "edit", label: "Edit details", icon: <Pencil className={ICON} /> },
-        { id: "role", label: "Change role", icon: <UserCog className={ICON} /> },
+        {
+          id: "edit",
+          label: "Edit details",
+          icon: <Pencil className={ICON} />,
+        },
+        {
+          id: "role",
+          label: "Change role",
+          icon: <UserCog className={ICON} />,
+        },
         dev.status === "SUSPENDED"
-          ? { id: "reactivate", label: "Reactivate", icon: <ShieldCheck className={ICON} /> }
-          : { id: "suspend", label: "Suspend", icon: <ShieldBan className={ICON} /> },
-        { id: "delete", label: "Delete", icon: <Trash2 className={ICON} />, divider: true },
+          ? {
+              id: "reactivate",
+              label: "Reactivate",
+              icon: <ShieldCheck className={ICON} />,
+            }
+          : {
+              id: "suspend",
+              label: "Suspend",
+              icon: <ShieldBan className={ICON} />,
+            },
+        {
+          id: "delete",
+          label: "Delete",
+          icon: <Trash2 className={ICON} />,
+          divider: true,
+        },
       ];
   }
 }
@@ -165,10 +201,39 @@ export function DevelopersTable() {
         width: showFullColumns ? "110px" : "90px",
         header: "Status",
         accessor: (row) => (
-          <Chip size="sm" variant={STATUS_META[row.status]?.variant ?? "neutral"}>
+          <Chip
+            size="sm"
+            variant={STATUS_META[row.status]?.variant ?? "neutral"}
+          >
             {STATUS_META[row.status]?.label ?? row.status}
           </Chip>
         ),
+      },
+      {
+        key: "organizations",
+        width: showFullColumns ? "180px" : "140px",
+        header: "Organization",
+        accessor: (row) => {
+          const orgs = row.organizations || [];
+          if (orgs.length === 0) {
+            return (
+              <span className="text-xs text-[var(--gy-text-subtle)]">—</span>
+            );
+          }
+          return (
+            <div className="flex flex-wrap gap-1 items-center">
+              {orgs.map((org) => (
+                <Chip
+                  key={org.id}
+                  size="xs"
+                  variant={org.isOwner ? "primary" : "neutral"}
+                >
+                  {org.name} {org.isOwner ? "(Owner)" : `(${org.role})`}
+                </Chip>
+              ))}
+            </div>
+          );
+        },
       },
       ...(showFullColumns
         ? [
@@ -183,7 +248,9 @@ export function DevelopersTable() {
                       {row.online && (
                         <span className="size-1.5 rounded-full bg-[var(--gy-success)]" />
                       )}
-                      {row.online ? "Online now" : relativeTime(row.lastSignInAt)}
+                      {row.online
+                        ? "Online now"
+                        : relativeTime(row.lastSignInAt)}
                     </div>
                     {row.lastDevice && (
                       <div className="truncate text-[var(--gy-text-subtle)]">
@@ -192,7 +259,9 @@ export function DevelopersTable() {
                     )}
                   </div>
                 ) : (
-                  <span className="text-xs text-[var(--gy-text-subtle)]">Never</span>
+                  <span className="text-xs text-[var(--gy-text-subtle)]">
+                    Never
+                  </span>
                 ),
             },
             {

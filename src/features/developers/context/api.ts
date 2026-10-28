@@ -80,6 +80,31 @@ export const developersApi = dashboardApi.injectEndpoints({
       query: (id) => ({ url: `/users/developers/${id}`, method: "DELETE" }),
       invalidatesTags: ["Developers"],
     }),
+
+    /** Link a developer to an organization. */
+    linkDeveloperOrganization: build.mutation<
+      void,
+      { id: string; organizationId: string; role?: string }
+    >({
+      query: ({ id, organizationId, role }) => ({
+        url: `/users/developers/${id}/link-organization`,
+        method: "POST",
+        body: { organizationId, role },
+      }),
+      invalidatesTags: ["Developers"],
+    }),
+
+    /** Unlink a developer from an organization. */
+    unlinkDeveloperOrganization: build.mutation<
+      void,
+      { id: string; organizationId: string }
+    >({
+      query: ({ id, organizationId }) => ({
+        url: `/users/developers/${id}/link-organization/${organizationId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Developers"],
+    }),
   }),
 });
 
@@ -91,4 +116,6 @@ export const {
   useRejectDeveloperMutation,
   useUpdateDeveloperMutation,
   useDeleteDeveloperMutation,
+  useLinkDeveloperOrganizationMutation,
+  useUnlinkDeveloperOrganizationMutation,
 } = developersApi;

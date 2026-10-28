@@ -42,6 +42,8 @@ export interface InviteDeveloperForm {
   phone: string;
   role: string;
   password: string;
+  organizationId: string;
+  orgRole: string;
 }
 
 /** Page-local UI state (reducer); server data comes from the shared store. */

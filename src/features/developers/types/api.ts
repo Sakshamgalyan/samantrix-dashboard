@@ -2,6 +2,14 @@
 export type DeveloperStatus =
   "PENDING_VERIFICATION" | "ACTIVE" | "INACTIVE" | "SUSPENDED";
 
+export interface DeveloperOrganization {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  isOwner?: boolean;
+}
+
 /** One row of GET /auth/developers (paginated) */
 export interface DeveloperAccount {
   id: string;
@@ -14,6 +22,7 @@ export interface DeveloperAccount {
   lastSignInAt: string | null;
   lastDevice: string | null;
   online: boolean;
+  organizations?: DeveloperOrganization[];
 }
 
 export interface DeveloperCounts {
@@ -46,6 +55,13 @@ export interface CreateDeveloperRequest {
   phone?: string;
   platformRole?: string;
   password?: string;
+  organizationId?: string;
+  orgRole?: string;
+}
+
+export interface LinkDeveloperOrganizationRequest {
+  organizationId: string;
+  role?: string;
 }
 
 export interface CreateDeveloperResponse {
@@ -59,5 +75,6 @@ export interface CreateDeveloperResponse {
     phone: string | null;
     platformRole: string;
     status: DeveloperStatus;
+    organizations?: DeveloperOrganization[];
   };
 }

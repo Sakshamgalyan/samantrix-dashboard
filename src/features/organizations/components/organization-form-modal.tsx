@@ -142,9 +142,9 @@ const OrganizationForm = ({ org }: { org: AdminOrganizationDetail | null }) => {
   const editing = org !== null;
   const [values, setValues] = useState<FormValues>(() => initialValues(org));
   const [ownerMode, setOwnerMode] = useState<"new" | "existing">("new");
-  const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>(
-    {},
-  );
+  const [errors, setErrors] = useState<
+    Partial<Record<keyof FormValues, string>>
+  >({});
   const [submitting, setSubmitting] = useState(false);
 
   const set =
@@ -156,7 +156,8 @@ const OrganizationForm = ({ org }: { org: AdminOrganizationDetail | null }) => {
 
   const validate = (): boolean => {
     const next: typeof errors = {};
-    if (values.name.trim().length < 2) next.name = "Enter the organization name";
+    if (values.name.trim().length < 2)
+      next.name = "Enter the organization name";
     if (values.businessEmail && !EMAIL_RE.test(values.businessEmail.trim())) {
       next.businessEmail = "Enter a valid email";
     }
@@ -247,7 +248,13 @@ const OrganizationForm = ({ org }: { org: AdminOrganizationDetail | null }) => {
       }
       footer={
         <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 w-full">
-          <Button variant="secondary" size="sm" className="w-full sm:w-auto" onClick={closeForm} disabled={submitting}>
+          <Button
+            variant="secondary"
+            size="sm"
+            className="w-full sm:w-auto"
+            onClick={closeForm}
+            disabled={submitting}
+          >
             Cancel
           </Button>
           <Button
@@ -264,8 +271,13 @@ const OrganizationForm = ({ org }: { org: AdminOrganizationDetail | null }) => {
     >
       <div className="space-y-5 px-1 py-1">
         <Section title="Organization">
-          {input("name", "Name", { required: true, placeholder: "Acme Corporation" })}
-          {input("legalName", "Legal name", { placeholder: "Acme Corporation Pvt Ltd" })}
+          {input("name", "Name", {
+            required: true,
+            placeholder: "Acme Corporation",
+          })}
+          {input("legalName", "Legal name", {
+            placeholder: "Acme Corporation Pvt Ltd",
+          })}
           {input("slug", "URL slug", {
             placeholder: editing ? undefined : "Generated from the name",
             helperText: "Lowercase letters, numbers and dashes",
@@ -298,7 +310,9 @@ const OrganizationForm = ({ org }: { org: AdminOrganizationDetail | null }) => {
             type: "email",
             placeholder: editing ? undefined : "Defaults to the owner's email",
           })}
-          {input("businessPhone", "Business phone", { placeholder: "+91 98765 43210" })}
+          {input("businessPhone", "Business phone", {
+            placeholder: "+91 98765 43210",
+          })}
           <div className="sm:col-span-2">
             {input("address", "Address", { placeholder: "Street, building" })}
           </div>
@@ -313,7 +327,10 @@ const OrganizationForm = ({ org }: { org: AdminOrganizationDetail | null }) => {
           <Dropdown
             label="Plan"
             size="sm"
-            options={PLAN_ORDER.map((p) => ({ value: p, label: PLAN_META[p].label }))}
+            options={PLAN_ORDER.map((p) => ({
+              value: p,
+              label: PLAN_META[p].label,
+            }))}
             value={values.planTier}
             onChange={setValue("planTier")}
           />
@@ -324,8 +341,14 @@ const OrganizationForm = ({ org }: { org: AdminOrganizationDetail | null }) => {
             value={values.billingCycle}
             onChange={setValue("billingCycle")}
           />
-          {input("maxMembers", "Member limit (seats)", { type: "number", min: 1 })}
-          {input("maxWorkspaces", "Workspace limit", { type: "number", min: 1 })}
+          {input("maxMembers", "Member limit (seats)", {
+            type: "number",
+            min: 1,
+          })}
+          {input("maxWorkspaces", "Workspace limit", {
+            type: "number",
+            min: 1,
+          })}
           {!editing && (
             <Dropdown
               label="Status"
@@ -361,7 +384,9 @@ const OrganizationForm = ({ org }: { org: AdminOrganizationDetail | null }) => {
               })}
               {ownerMode === "new" && (
                 <>
-                  {input("ownerFullName", "Owner full name", { required: true })}
+                  {input("ownerFullName", "Owner full name", {
+                    required: true,
+                  })}
                   {input("ownerPhone", "Owner phone")}
                 </>
               )}
@@ -369,7 +394,7 @@ const OrganizationForm = ({ org }: { org: AdminOrganizationDetail | null }) => {
             <p className="text-xs text-[var(--gy-text-secondary)]">
               {ownerMode === "new"
                 ? "The owner is emailed that their account exists and sets a password with “Forgot password” on the sign-in page."
-                : "The account must be an organization account that doesn't belong to another organization yet."}
+                : "Use an existing developer or organization account that doesn't already belong to an organization."}
             </p>
           </section>
         )}
@@ -391,14 +416,12 @@ const OrganizationForm = ({ org }: { org: AdminOrganizationDetail | null }) => {
       </div>
     </Modal>
   );
-}
+};
 
 /** Create / edit organization dialog; remounted per open so it starts from fresh values. */
 export const OrganizationFormModal = () => {
   const { state } = useOrganizationsContext();
   const dialog = state.formDialog;
   if (!dialog) return null;
-  return (
-    <OrganizationForm key={dialog.org?.id ?? "new"} org={dialog.org} />
-  );
+  return <OrganizationForm key={dialog.org?.id ?? "new"} org={dialog.org} />;
 };

@@ -322,6 +322,10 @@ export function DevelopersProvider({
         phone: inviteForm.phone.trim() || undefined,
         platformRole: inviteForm.role,
         password: inviteForm.password.trim() || undefined,
+        organizationId: inviteForm.organizationId?.trim() || undefined,
+        orgRole: inviteForm.organizationId?.trim()
+          ? inviteForm.orgRole?.trim() || "MEMBER"
+          : undefined,
       }).unwrap();
 
       toast.success(

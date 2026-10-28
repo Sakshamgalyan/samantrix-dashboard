@@ -4,6 +4,15 @@ import { Button, Dropdown, Input, Modal } from "@galyan/ui";
 import { Mail, UserPlus } from "lucide-react";
 import { GLASS_ROW } from "@/components/layout/common/glass";
 import { useDevelopersContext } from "@/features/developers/context";
+import { useGetAdminOrganizationsQuery } from "@/features/organizations/context/api";
+
+const ORG_ROLE_OPTIONS = [
+  { value: "MEMBER", label: "Member" },
+  { value: "ADMIN", label: "Admin" },
+  { value: "MANAGER", label: "Manager" },
+  { value: "OWNER", label: "Owner" },
+  { value: "VIEWER", label: "Viewer" },
+];
 
 export const InviteDeveloperModal = () => {
   const {
@@ -14,6 +23,19 @@ export const InviteDeveloperModal = () => {
     submitInvite,
   } = useDevelopersContext();
   const { isInviteOpen, inviteForm, inviting } = state;
+
+  const { data: orgsData } = useGetAdminOrganizationsQuery(
+    { page: 1, limit: 100 },
+    { skip: !isInviteOpen },
+  );
+
+  const orgOptions = [
+    { value: "", label: "None (Developer account only)" },
+    ...(orgsData?.data || []).map((o) => ({
+      value: o.id,
+      label: o.name,
+    })),
+  ];
 
   return (
     <Modal
@@ -94,6 +116,25 @@ export const InviteDeveloperModal = () => {
           value={inviteForm.role}
           onChange={(v) => patchInviteForm({ role: v as string })}
         />
+
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Dropdown
+            size="sm"
+            label="Link Organization (optional)"
+            options={orgOptions}
+            value={inviteForm.organizationId || ""}
+            onChange={(v) => patchInviteForm({ organizationId: v as string })}
+          />
+          {inviteForm.organizationId && (
+            <Dropdown
+              size="sm"
+              label="Organization Role"
+              options={ORG_ROLE_OPTIONS}
+              value={inviteForm.orgRole || "MEMBER"}
+              onChange={(v) => patchInviteForm({ orgRole: v as string })}
+            />
+          )}
+        </div>
 
         <Input
           size="sm"
