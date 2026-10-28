@@ -1,8 +1,18 @@
 "use client";
 
 import React from "react";
-import { Button, FileUpload, Modal, type UploadedFileItem } from "@galyan/ui";
+import { Button, FileUpload, Modal } from "@galyan/ui";
 import { Upload } from "lucide-react";
+
+export interface UploadedFileItem {
+  id?: string;
+  name: string;
+  size?: number;
+  type?: string;
+  status?: "uploading" | "completed" | "error";
+  progress?: number;
+  url?: string;
+}
 
 export interface AvatarUploadModalProps {
   isOpen: boolean;

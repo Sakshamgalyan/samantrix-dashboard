@@ -10,8 +10,8 @@ import {
   Input,
   Typography,
   useToast,
-  type UploadedFileItem,
 } from "@galyan/ui";
+import type { UploadedFileItem } from "@/features/admin-settings/account/avatar-upload-modal";
 import { Camera, Mail, Save, UserRound, Trash2 } from "lucide-react";
 import { GlassSection } from "@/components/layout/common/glass-section";
 import { useAuth } from "@/features/auth";
