@@ -2,7 +2,14 @@
 
 import React, { useEffect, useState } from "react";
 import { Banner, Button, Input, Typography, useToast } from "@galyan/ui";
-import { CheckCircle2, Eye, EyeOff, KeyRound, MailCheck, Send } from "lucide-react";
+import {
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  KeyRound,
+  MailCheck,
+  Send,
+} from "lucide-react";
 import { GlassSection } from "@/components/layout/common/glass-section";
 import {
   errorMessage,
@@ -15,7 +22,8 @@ type Step = "idle" | "code" | "done";
 
 const passwordProblem = (value: string): string | undefined => {
   if (value.length < 8) return "At least 8 characters";
-  if (!/[A-Za-z]/.test(value) || !/\d/.test(value)) return "Use letters and numbers";
+  if (!/[A-Za-z]/.test(value) || !/\d/.test(value))
+    return "Use letters and numbers";
   return undefined;
 };
 
@@ -43,8 +51,10 @@ export const PasswordCard = () => {
   const [step, setStep] = useState<Step>("idle");
   const [sentTo, setSentTo] = useState("");
   const [code, setCode] = useState("");
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
   const [show, setShow] = useState(false);
   const [sending, setSending] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -73,17 +83,28 @@ export const PasswordCard = () => {
   };
 
   const problem = password ? passwordProblem(password) : undefined;
-  const mismatch = confirm && confirm !== password ? "Passwords don't match" : undefined;
-  const canSubmit = /^\d{6}$/.test(code) && password && !problem && confirm === password;
+  const mismatch =
+    confirm && confirm !== password ? "Passwords don't match" : undefined;
+  const canSubmit =
+    /^\d{6}$/.test(code) &&
+    currentPassword.trim().length > 0 &&
+    password &&
+    !problem &&
+    confirm === password;
 
   const submit = async () => {
     setSaving(true);
     setError(null);
     try {
-      const res = await changePassword({ code, newPassword: password }).unwrap();
+      const res = await changePassword({
+        code,
+        currentPassword: currentPassword.trim(),
+        newPassword: password,
+      }).unwrap();
       setSignedOut(res.signedOutSessions);
       setStep("done");
       setCode("");
+      setCurrentPassword("");
       setPassword("");
       setConfirm("");
       // Invalidates the device list, which refetches once
@@ -98,14 +119,26 @@ export const PasswordCard = () => {
   const reset = () => {
     setStep("idle");
     setError(null);
+    setCode("");
+    setCurrentPassword("");
+    setPassword("");
+    setConfirm("");
   };
 
   return (
-    <GlassSection title="Password" subtitle="Changing it needs a code sent to your email">
+    <GlassSection
+      title="Password"
+      subtitle="Changing it needs a code sent to your email"
+    >
       {step === "idle" && (
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <Typography variant="p" textColor="var(--gy-text-secondary)" className="text-xs">
-            We&apos;ll email you a 6-digit code. Your other devices are signed out once the password changes.
+          <Typography
+            variant="p"
+            textColor="var(--gy-text-secondary)"
+            className="text-xs"
+          >
+            We&apos;ll email you a 6-digit code. Your other devices are signed
+            out once the password changes.
           </Typography>
           <Button
             variant="primary"
@@ -126,18 +159,32 @@ export const PasswordCard = () => {
               <MailCheck className="size-3.5 text-[var(--gy-success)] shrink-0" />
               {sentTo ? (
                 <span>
-                  Code sent to <strong className="text-[var(--gy-text)]">{sentTo}</strong> · valid 10 minutes
+                  Code sent to{" "}
+                  <strong className="text-[var(--gy-text)]">{sentTo}</strong> ·
+                  valid 10 minutes
                 </span>
               ) : (
                 <span>Enter the code from your latest email</span>
               )}
             </span>
-            <Button variant="ghost" size="sm" disabled={resendIn > 0 || sending} onClick={() => void sendCode()}>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={resendIn > 0 || sending}
+              onClick={() => void sendCode()}
+            >
               {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
             </Button>
           </div>
-          {error && <Banner variant="danger" size="sm" bannerStyle="subtle" description={error} />}
-          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {error && (
+            <Banner
+              variant="danger"
+              size="sm"
+              bannerStyle="subtle"
+              description={error}
+            />
+          )}
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
             <Input
               label="Verification code"
               size="sm"
@@ -145,35 +192,73 @@ export const PasswordCard = () => {
               autoComplete="one-time-code"
               placeholder="000000"
               value={code}
-              onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+              onChange={(e) =>
+                setCode(e.target.value.replace(/\D/g, "").slice(0, 6))
+              }
               leftIcon={<KeyRound className="size-3.5" />}
+            />
+            <Input
+              label="Current password"
+              size="sm"
+              type={showCurrent ? "text" : "password"}
+              autoComplete="current-password"
+              placeholder="Enter current password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              rightIcon={
+                showCurrent ? (
+                  <EyeOff className="size-3.5" />
+                ) : (
+                  <Eye className="size-3.5" />
+                )
+              }
+              onRightIconClick={() => setShowCurrent((v) => !v)}
             />
             <Input
               label="New password"
               size="sm"
               type={show ? "text" : "password"}
               autoComplete="new-password"
+              placeholder="At least 8 characters"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               error={problem}
-              rightIcon={show ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+              rightIcon={
+                show ? (
+                  <EyeOff className="size-3.5" />
+                ) : (
+                  <Eye className="size-3.5" />
+                )
+              }
               onRightIconClick={() => setShow((v) => !v)}
             />
             <Input
-              label="Confirm password"
+              label="Confirm new password"
               size="sm"
               type={show ? "text" : "password"}
               autoComplete="new-password"
+              placeholder="Re-enter new password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               error={mismatch}
             />
           </div>
-          <div className="flex justify-end gap-2 flex-wrap">
-            <Button variant="secondary" size="sm" onClick={reset} disabled={saving}>
+          <div className="flex justify-end gap-2 flex-wrap pt-1">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={reset}
+              disabled={saving}
+            >
               Cancel
             </Button>
-            <Button variant="primary" size="sm" isLoading={saving} disabled={!canSubmit} onClick={() => void submit()}>
+            <Button
+              variant="primary"
+              size="sm"
+              isLoading={saving}
+              disabled={!canSubmit}
+              onClick={() => void submit()}
+            >
               Update password
             </Button>
           </div>
@@ -184,12 +269,21 @@ export const PasswordCard = () => {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <span className="inline-flex items-center gap-2 text-sm text-[var(--gy-text)]">
             <CheckCircle2 className="size-4 text-[var(--gy-success)] shrink-0" />
-            <Typography variant="span" weight="medium" textColor="var(--gy-text)">
+            <Typography
+              variant="span"
+              weight="medium"
+              textColor="var(--gy-text)"
+            >
               Password updated
             </Typography>
             {signedOut > 0 && (
-              <Typography variant="small" textColor="var(--gy-text-secondary)" className="text-xs">
-                · signed out {signedOut} other {signedOut === 1 ? "device" : "devices"}
+              <Typography
+                variant="small"
+                textColor="var(--gy-text-secondary)"
+                className="text-xs"
+              >
+                · signed out {signedOut} other{" "}
+                {signedOut === 1 ? "device" : "devices"}
               </Typography>
             )}
           </span>
@@ -201,4 +295,3 @@ export const PasswordCard = () => {
     </GlassSection>
   );
 };
-

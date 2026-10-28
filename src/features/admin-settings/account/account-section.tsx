@@ -3,9 +3,16 @@
 import React from "react";
 import { Chip, Typography } from "@galyan/ui";
 import { ShieldAlert, ShieldCheck } from "lucide-react";
-import { AdminLoadError, AdminPageSkeleton } from "@/components/layout/common/states";
+import {
+  AdminLoadError,
+  AdminPageSkeleton,
+} from "@/components/layout/common/states";
 import { GlassSection } from "@/components/layout/common/glass-section";
-import { errorMessage, useGetAccountProfileQuery, useGetActiveSessionsQuery } from "@/features/admin-settings/account/api";
+import {
+  errorMessage,
+  useGetAccountProfileQuery,
+  useGetActiveSessionsQuery,
+} from "@/features/admin-settings/account/api";
 import { ProfileCard } from "@/features/admin-settings/account/profile-card";
 import { PasswordCard } from "@/features/admin-settings/account/password-card";
 import { SessionsCard } from "@/features/admin-settings/account/sessions-card";
@@ -19,7 +26,9 @@ export const AccountSection = () => {
   const { refetch: refetchSessions } = sessionsQuery;
   const profile = profileQuery.data ?? null;
   const sessions = sessionsQuery.data ?? [];
-  const error = profileQuery.error ? errorMessage(profileQuery.error, "Could not load your account.") : null;
+  const error = profileQuery.error
+    ? errorMessage(profileQuery.error, "Could not load your account.")
+    : null;
 
   const retry = () => {
     void refetchProfile();
@@ -28,7 +37,11 @@ export const AccountSection = () => {
 
   if (!profile) {
     return error ? (
-      <AdminLoadError title="Account unavailable" message={error} onRetry={retry} />
+      <AdminLoadError
+        title="Account unavailable"
+        message={error}
+        onRetry={retry}
+      />
     ) : (
       <AdminPageSkeleton />
     );
@@ -39,7 +52,7 @@ export const AccountSection = () => {
       <div className="space-y-4">
         {/* Keyed on the saved values so the form resets to them after a save */}
         <ProfileCard
-          key={`${profile.fullName}|${profile.phone}|${profile.timezone}`}
+          key={`${profile.fullName}|${profile.phone}|${profile.timezone}|${profile.avatarUrl ?? ""}`}
           profile={profile}
         />
         <GlassSection
@@ -47,17 +60,29 @@ export const AccountSection = () => {
           subtitle="A code from your authenticator app at every sign-in"
           aside={
             profile.twoFactorEnabled ? (
-              <Chip size="sm" variant="success" icon={<ShieldCheck className="size-3" />}>
+              <Chip
+                size="sm"
+                variant="success"
+                icon={<ShieldCheck className="size-3" />}
+              >
                 Enabled
               </Chip>
             ) : (
-              <Chip size="sm" variant="warning" icon={<ShieldAlert className="size-3" />}>
+              <Chip
+                size="sm"
+                variant="warning"
+                icon={<ShieldAlert className="size-3" />}
+              >
                 Off
               </Chip>
             )
           }
         >
-          <Typography variant="p" textColor="var(--gy-text-secondary)" className="text-xs">
+          <Typography
+            variant="p"
+            textColor="var(--gy-text-secondary)"
+            className="text-xs"
+          >
             {profile.twoFactorEnabled
               ? "Your account asks for an authenticator code after your password."
               : "Two-factor authentication is off for your account. Ask a superadmin if your role requires it."}
@@ -71,4 +96,3 @@ export const AccountSection = () => {
     </div>
   );
 };
-

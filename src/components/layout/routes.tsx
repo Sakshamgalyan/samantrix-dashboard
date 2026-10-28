@@ -25,7 +25,12 @@ import {
   Radio,
   type LucideIcon,
 } from "lucide-react";
-import { ORG_ADMINS, ORG_LEADS, type OrgRole, type Permission } from "@/utils/roles";
+import {
+  ORG_ADMINS,
+  ORG_LEADS,
+  type OrgRole,
+  type Permission,
+} from "@/utils/roles";
 
 /** Which console a route belongs to; "shared" routes appear in both. */
 export type DashboardScope = "admin" | "workspace" | "shared";
@@ -65,7 +70,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization",
     label: "Overview",
-    description: "Your organization at a glance: members, usage, and recent activity.",
+    description:
+      "Your organization at a glance: members, usage, and recent activity.",
     icon: LayoutDashboard,
     group: "Overview",
     scope: "workspace",
@@ -75,7 +81,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/revenue",
     label: "Revenue",
-    description: "Recurring revenue, collections, plan mix and top paying organizations.",
+    description:
+      "Recurring revenue, collections, plan mix and top paying organizations.",
     icon: TrendingUp,
     group: "Overview",
     scope: "admin",
@@ -84,7 +91,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/developers",
     label: "Developers",
-    description: "Developer accounts: approve registrations, change roles, edit or remove access.",
+    description:
+      "Developer accounts: approve registrations, change roles, edit or remove access.",
     icon: Code2,
     group: "Administration",
     scope: "admin",
@@ -93,7 +101,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/organizations",
     label: "Organizations",
-    description: "Tenant registry: provision organizations, inspect members, manage subscriptions.",
+    description:
+      "Tenant registry: provision organizations, inspect members, manage subscriptions.",
     icon: Building2,
     group: "Administration",
     scope: "admin",
@@ -102,7 +111,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/payments",
     label: "Payments",
-    description: "Razorpay charges, manual payment entries, plans and pricing tiers.",
+    description:
+      "Razorpay charges, manual payment entries, plans and pricing tiers.",
     icon: DollarSign,
     group: "Finance",
     scope: "admin",
@@ -111,7 +121,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/features",
     label: "Feature Flags",
-    description: "Global switches and per-tier entitlements across the ecosystem.",
+    description:
+      "Global switches and per-tier entitlements across the ecosystem.",
     icon: Sparkles,
     group: "System & Core",
     scope: "admin",
@@ -120,7 +131,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/versioning",
     label: "App Versioning",
-    description: "Manage versions, release channels, and rollouts for Simantrix Desktop App.",
+    description:
+      "Manage versions, release channels, and rollouts for Simantrix Desktop App.",
     icon: Laptop,
     group: "System & Core",
     scope: "admin",
@@ -129,7 +141,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/marketing-analytics",
     label: "Marketing Analytics",
-    description: "Traffic, referral sources, and conversion funnels across simantrix-home.",
+    description:
+      "Traffic, referral sources, and conversion funnels across simantrix-home.",
     icon: Globe,
     group: "Growth",
     scope: "admin",
@@ -138,7 +151,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/leads",
     label: "Lead Pipeline",
-    description: "Enterprise inquiries, qualification stages, quotes and demo scheduling.",
+    description:
+      "Enterprise inquiries, qualification stages, quotes and demo scheduling.",
     icon: Target,
     group: "Growth",
     scope: "admin",
@@ -147,7 +161,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/ecosystem",
     label: "Ecosystem Health",
-    description: "Service status, uptime telemetry, database connectivity and dependencies.",
+    description:
+      "Service status, uptime telemetry, database connectivity and dependencies.",
     icon: Activity,
     group: "Infrastructure",
     scope: "admin",
@@ -156,7 +171,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/realtime",
     label: "Realtime Gateway",
-    description: "Live WebSocket monitor, cluster connection state and packet distribution.",
+    description:
+      "Live WebSocket monitor, cluster connection state and packet distribution.",
     icon: Radio,
     group: "Infrastructure",
     scope: "admin",
@@ -165,7 +181,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/queues",
     label: "Background Jobs",
-    description: "BullMQ queue metrics: active, waiting, failed jobs and worker concurrency.",
+    description:
+      "BullMQ queue metrics: active, waiting, failed jobs and worker concurrency.",
     icon: Network,
     group: "Infrastructure",
     scope: "admin",
@@ -174,7 +191,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/audit-logs",
     label: "Platform Audit",
-    description: "Immutable security trail: logins, role escalations, config changes and deletes.",
+    description:
+      "Immutable security trail: logins, role escalations, config changes and deletes.",
     icon: ShieldCheck,
     group: "Security & Compliance",
     scope: "admin",
@@ -183,18 +201,20 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "admin/settings",
     label: "Console Settings",
-    description: "System parameters, notification routing, and your developer profile.",
+    description:
+      "System parameters, notification routing, and your developer profile.",
     icon: Settings,
     group: "Security & Compliance",
     scope: "admin",
-    permission: "platform:settings",
+    permission: "console:read",
   },
 
   // ── Workspace Console ─────────────────────────────────────────────────────
   {
     path: "organization/users",
     label: "Team Members",
-    description: "Directory of members, invitations, department assignments, and access roles.",
+    description:
+      "Directory of members, invitations, department assignments, and access roles.",
     icon: Users,
     group: "Directory",
     scope: "workspace",
@@ -203,7 +223,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization/spaces",
     label: "Spaces & Zones",
-    description: "Custom floor plans, meeting room configurations and spatial layouts.",
+    description:
+      "Custom floor plans, meeting room configurations and spatial layouts.",
     icon: Boxes,
     group: "Workplace",
     scope: "workspace",
@@ -212,7 +233,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization/departments",
     label: "Departments",
-    description: "Organizational units, budget tracking, and group-level permission scopes.",
+    description:
+      "Organizational units, budget tracking, and group-level permission scopes.",
     icon: Network,
     group: "Directory",
     scope: "workspace",
@@ -221,7 +243,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization/ai-assistants",
     label: "AI Assistants",
-    description: "Context bots, document indexing, and generative workspace assistants.",
+    description:
+      "Context bots, document indexing, and generative workspace assistants.",
     icon: Bot,
     group: "Workplace",
     scope: "workspace",
@@ -230,7 +253,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization/features",
     label: "Features & Add-ons",
-    description: "Enable or customize optional modules available under your plan tier.",
+    description:
+      "Enable or customize optional modules available under your plan tier.",
     icon: Sparkles,
     group: "Workplace",
     scope: "workspace",
@@ -239,7 +263,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization/analytics",
     label: "Usage Analytics",
-    description: "Seat utilization, room occupancy rates, and meeting duration trends.",
+    description:
+      "Seat utilization, room occupancy rates, and meeting duration trends.",
     icon: BarChart3,
     group: "Insights",
     scope: "workspace",
@@ -248,7 +273,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization/subscription",
     label: "Plan & Billing",
-    description: "Current tier, seat allocation, renewal dates, and payment history.",
+    description:
+      "Current tier, seat allocation, renewal dates, and payment history.",
     icon: CreditCard,
     group: "Billing",
     scope: "workspace",
@@ -257,7 +283,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization/billing",
     label: "Invoices & Receipts",
-    description: "Downloadable tax invoices, GST receipts, and payment method settings.",
+    description:
+      "Downloadable tax invoices, GST receipts, and payment method settings.",
     icon: Receipt,
     group: "Billing",
     scope: "workspace",
@@ -266,7 +293,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization/security",
     label: "Security & Policies",
-    description: "Two-factor enforcement, domain restrictions, and access policies.",
+    description:
+      "Two-factor enforcement, domain restrictions, and access policies.",
     icon: KeyRound,
     group: "Administration",
     scope: "workspace",
@@ -275,7 +303,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization/fleet",
     label: "Desktop Fleet",
-    description: "Connected desktop app instances, version compliance, and remote sign-outs.",
+    description:
+      "Connected desktop app instances, version compliance, and remote sign-outs.",
     icon: Laptop,
     group: "Administration",
     scope: "workspace",
@@ -284,7 +313,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization/audit-logs",
     label: "Audit Logs",
-    description: "Activity trail of member joins, setting changes, and security events.",
+    description:
+      "Activity trail of member joins, setting changes, and security events.",
     icon: FileText,
     group: "Administration",
     scope: "workspace",
@@ -293,7 +323,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization/integrations",
     label: "Integrations",
-    description: "Connect GitHub repositories, webhooks, and third-party productivity tools.",
+    description:
+      "Connect GitHub repositories, webhooks, and third-party productivity tools.",
     icon: Code2,
     group: "Administration",
     scope: "workspace",
@@ -302,7 +333,8 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
   {
     path: "organization/settings",
     label: "Workspace Settings",
-    description: "Organization identity, default time zones, and administrative controls.",
+    description:
+      "Organization identity, default time zones, and administrative controls.",
     icon: Settings,
     group: "Administration",
     scope: "workspace",
@@ -331,10 +363,16 @@ export const DASHBOARD_ROUTES: DashboardRoute[] = [
 ];
 
 // Longest path first, sorted once rather than on every navigation
-const ROUTES_BY_SPECIFICITY = [...DASHBOARD_ROUTES].sort((a, b) => b.path.length - a.path.length);
+const ROUTES_BY_SPECIFICITY = [...DASHBOARD_ROUTES].sort(
+  (a, b) => b.path.length - a.path.length,
+);
 
 /** Route matching a router location; longest path wins. */
-export function matchDashboardRoute(pathname: string): DashboardRoute | undefined {
+export function matchDashboardRoute(
+  pathname: string,
+): DashboardRoute | undefined {
   const relative = pathname.replace(/^\/+|\/+$/g, "");
-  return ROUTES_BY_SPECIFICITY.find((r) => relative === r.path || relative.startsWith(`${r.path}/`));
+  return ROUTES_BY_SPECIFICITY.find(
+    (r) => relative === r.path || relative.startsWith(`${r.path}/`),
+  );
 }
